@@ -21,6 +21,10 @@ pub struct Cli {
     /// Verbose diagnostic output
     #[arg(short, long, global = true)]
     pub verbose: bool,
+
+    /// Internal flag when spawned inside an elevated interactive console
+    #[arg(long, hide = true)]
+    pub interactive_terminal: bool,
 }
 
 #[derive(Subcommand, Debug)]

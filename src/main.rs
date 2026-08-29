@@ -23,22 +23,27 @@ use std::path::Path;
 use validation::ValidationEngine;
 use windows::WindowsInfo;
 
-#[cfg(windows)]
-extern "system" {
-    fn AllocConsole() -> i32;
-    fn AttachConsole(dw_process_id: u32) -> i32;
-}
-
 fn main() -> Result<()> {
     #[cfg(windows)]
-    unsafe {
-        if AttachConsole(0xFFFFFFFF) == 0 {
-            AllocConsole();
-        }
-        let _ = colored::control::set_virtual_terminal(true);
-    }
+    let _ = colored::control::set_virtual_terminal(true);
 
     let args = Cli::parse();
+
+    // If launched with no subcommands (e.g. double-clicked in Explorer by standard user):
+    // Relaunch immediately inside a dedicated Administrator Command Prompt console window
+    if args.command.is_none() && !args.interactive_terminal {
+        if !WindowsInfo::check_is_admin() {
+            let current_exe = std::env::current_exe()?;
+            let script = format!(
+                "Start-Process cmd.exe -ArgumentList '/c \"\"{}\"\" --interactive-terminal' -Verb RunAs",
+                current_exe.display()
+            );
+            let _ = std::process::Command::new("powershell")
+                .args(["-NoProfile", "-Command", &script])
+                .spawn();
+            return Ok(());
+        }
+    }
 
     print_banner();
 
