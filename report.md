@@ -1,6 +1,6 @@
 # Project Obsidian — Execution & Optimization Report
 
-**Generated:** 2026-08-29T16:52:42.005924+00:00
+**Generated:** 2026-08-29T17:00:48.878980600+00:00
 **Applied Profile:** Ultimate Workstation
 
 ## 1. System Baseline
@@ -27,10 +27,10 @@
 
 ## 3. Performance Metrics
 
-- **RAM in Use:** 16.98 GB (55.0%)
-- **Active Processes:** 371
-- **Active Threads:** 371
-- **CPU Idle Load:** 4.9%
+- **RAM in Use:** 16.85 GB (54.6%)
+- **Active Processes:** 354
+- **Active Threads:** 354
+- **CPU Idle Load:** 2.6%
 
 ## 4. Rollback Readiness
 

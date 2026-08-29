@@ -20,13 +20,17 @@ impl ValidationEngine {
         println!("{}", "            PROJECT OBSIDIAN — SYSTEM HEALTH & VALIDATION MATRIX               ".cyan());
         println!("{}", "================================================================================".cyan());
 
+        let root = crate::embedded::get_scripts_root();
+        let val_p = root.join("powershell").join("Validation.ps1");
+        let cmd = format!(". '{}'; Test-ObsidianHealth | ConvertTo-Json", val_p.display());
+
         let output = Command::new("powershell")
             .args([
                 "-NoProfile",
                 "-ExecutionPolicy",
                 "Bypass",
                 "-Command",
-                ". .\\powershell\\Validation.ps1; Test-ObsidianHealth | ConvertTo-Json",
+                &cmd,
             ])
             .output()?;
 

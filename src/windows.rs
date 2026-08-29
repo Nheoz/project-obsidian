@@ -75,4 +75,16 @@ impl WindowsInfo {
             false
         }
     }
+
+    pub fn relaunch_as_admin() -> anyhow::Result<()> {
+        let current_exe = std::env::current_exe()?;
+        let _ = Command::new("powershell")
+            .args([
+                "-NoProfile",
+                "-Command",
+                &format!("Start-Process -FilePath '{}' -Verb RunAs", current_exe.display()),
+            ])
+            .spawn();
+        std::process::exit(0);
+    }
 }

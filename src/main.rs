@@ -1,5 +1,6 @@
 mod benchmark;
 mod cli;
+mod embedded;
 mod hardware;
 mod modules;
 mod profiles;
@@ -22,10 +23,20 @@ use std::path::Path;
 use validation::ValidationEngine;
 use windows::WindowsInfo;
 
+#[cfg(windows)]
+extern "system" {
+    fn AllocConsole() -> i32;
+    fn AttachConsole(dw_process_id: u32) -> i32;
+}
+
 fn main() -> Result<()> {
-    // Enable ANSI color support on Windows terminals
     #[cfg(windows)]
-    let _ = colored::control::set_virtual_terminal(true);
+    unsafe {
+        if AttachConsole(0xFFFFFFFF) == 0 {
+            AllocConsole();
+        }
+        let _ = colored::control::set_virtual_terminal(true);
+    }
 
     let args = Cli::parse();
 
@@ -93,9 +104,10 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
             );
 
             if !windows.is_admin && !dry_run {
-                eprintln!("{}", "[!] ERROR: Administrator privileges are required to apply optimizations.".red().bold());
-                eprintln!("{}", "    Please run terminal or PowerShell as Administrator.".yellow());
-                std::process::exit(1);
+                println!("{}", "[*] Administrator privileges required to configure system.".yellow().bold());
+                println!("{}", "[*] Launching Windows UAC elevation prompt...".cyan());
+                WindowsInfo::relaunch_as_admin()?;
+                return Ok(());
             }
 
             let mut snap = Snapshot::new(&opt_profile.name, windows.clone(), hardware.clone());
@@ -185,8 +197,11 @@ fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Resul
         println!("  {} Apply Profile: GAMING (Latency & Game DVR only)", "[6]".green().bold());
         println!("  {} Validate System Health (Post-flight zero-breakage check)", "[7]".cyan().bold());
         println!("  {} Restore / Rollback (Revert system to exact prior state)", "[8]".magenta().bold());
+        if !windows.is_admin {
+            println!("  {} Elevate to Administrator (Trigger UAC Prompt)", "[0]".yellow().bold());
+        }
         println!("  {} Exit Project Obsidian", "[9]".dimmed());
-        print!("\n{}", "Enter option [1-9]: ".white().bold());
+        print!("\n{}", "Enter option: ".white().bold());
         io::stdout().flush()?;
 
         let mut input = String::new();
@@ -195,6 +210,10 @@ fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Resul
 
         println!("\n");
         match choice {
+            "0" => {
+                println!("{}", "[*] Requesting Administrator elevation via UAC...".cyan());
+                WindowsInfo::relaunch_as_admin()?;
+            }
             "1" => {
                 execute_command(Commands::Analyze, windows, hardware)?;
             }
@@ -224,7 +243,7 @@ fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Resul
                 break;
             }
             _ => {
-                println!("{}", "[!] Invalid selection. Please enter a number between 1 and 9.".red());
+                println!("{}", "[!] Invalid selection. Please enter a valid option number.".red());
             }
         }
 

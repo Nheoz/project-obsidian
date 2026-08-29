@@ -30,13 +30,16 @@ impl RollbackEngine {
 
         println!("{} {}", "[*] Restoring from snapshot:".cyan(), snapshot_path.display());
 
+        let root = crate::embedded::get_scripts_root();
+        let restore_script = root.join("Restore-Obsidian.ps1");
+
         let status = Command::new("powershell")
             .args([
                 "-NoProfile",
                 "-ExecutionPolicy",
                 "Bypass",
                 "-File",
-                "Restore-Obsidian.ps1",
+                restore_script.to_str().unwrap_or("Restore-Obsidian.ps1"),
                 "-SnapshotPath",
                 snapshot_path.to_str().unwrap_or(""),
             ])
@@ -53,13 +56,16 @@ impl RollbackEngine {
     }
 
     fn execute_powershell_fallback() -> Result<()> {
+        let root = crate::embedded::get_scripts_root();
+        let restore_script = root.join("Restore-Obsidian.ps1");
+
         let status = Command::new("powershell")
             .args([
                 "-NoProfile",
                 "-ExecutionPolicy",
                 "Bypass",
                 "-File",
-                "Restore-Obsidian.ps1",
+                restore_script.to_str().unwrap_or("Restore-Obsidian.ps1"),
             ])
             .status()
             .context("Failed to execute fallback Restore-Obsidian.ps1")?;
