@@ -4,11 +4,12 @@
 
 <br/>
 
-[![CI Rust](https://github.com/project-obsidian/obsidian/actions/workflows/rust.yml/badge.svg)](https://github.com/project-obsidian/obsidian/actions)
-[![CI PowerShell](https://github.com/project-obsidian/obsidian/actions/workflows/powershell.yml/badge.svg)](https://github.com/project-obsidian/obsidian/actions)
+[![CI Rust](https://img.shields.io/badge/CI-Rust-orange?logo=rust)](https://github.com/Nheoz/project-obsidian/actions)
+[![CI PowerShell](https://img.shields.io/badge/CI-PowerShell-5391FE?logo=powershell)](https://github.com/Nheoz/project-obsidian/actions)
+[![Release](https://img.shields.io/github/v/release/Nheoz/project-obsidian?logo=github&color=10b981)](https://github.com/Nheoz/project-obsidian/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Windows 11](https://img.shields.io/badge/Target-Windows%2011%20(23H2%20--%2025H2)-0078D4?logo=windows)](https://microsoft.com/windows)
-[![Architecture](https://img.shields.io/badge/Arch-x86__64-informational)](https://github.com/project-obsidian/obsidian)
+[![Architecture](https://img.shields.io/badge/Arch-x86__64-informational)](https://github.com/Nheoz/project-obsidian)
 [![Rust Core](https://img.shields.io/badge/Core-Rust%201.85+-orange?logo=rust)](https://www.rust-lang.org/)
 [![PowerShell Enterprise](https://img.shields.io/badge/Shell-PowerShell%205.1%20%2F%207+-5391FE?logo=powershell)](https://learn.microsoft.com/powershell/)
 
@@ -49,7 +50,7 @@ $$\mathbf{SECURITY} > \mathbf{STABILITY} > \mathbf{COMPATIBILITY} > \mathbf{PRIV
 ## ⚡ Quick Start
 
 ### Option 1: Standalone Binary (Recommended)
-Download the latest pre-compiled `obsidian.exe` from [Releases](https://github.com/project-obsidian/obsidian/releases), open PowerShell as **Administrator**, and run:
+Download the latest pre-compiled `obsidian.exe` from [Releases](https://github.com/Nheoz/project-obsidian/releases), open PowerShell as **Administrator**, and run:
 
 ```powershell
 # 1. Audit your system without making ANY changes (Dry-Run)
