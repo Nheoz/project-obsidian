@@ -1,0 +1,23 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  check:
+    name: Rust Check & Clippy
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Cargo Check
+        run: cargo check --verbose
+      - name: Rustfmt Check
+        run: cargo fmt -- --check
+      - name: Clippy Lint
+        run: cargo clippy -- -D warnings

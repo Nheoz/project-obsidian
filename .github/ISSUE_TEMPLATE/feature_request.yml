@@ -1,0 +1,21 @@
+name: Feature Request
+description: Propose an optimization or improvement for Project Obsidian
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Feature proposals must align with the **Zero Placebo** and **Zero Breakage** philosophy.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Justification & Technical Basis
+      description: Provide official Microsoft Learn or vendor documentation backing this request.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Implementation & Safety Impact
+      description: Describe the module (Privacy, Gaming, AI, Developer) and rollback mechanics.
+    validations:
+      required: true

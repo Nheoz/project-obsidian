@@ -1,0 +1,33 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-release:
+    name: Build obsidian.exe Release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build Release Binary
+        run: cargo build --release
+      - name: Create Release Archive
+        shell: pwsh
+        run: |
+          $ver = "${{ github.ref_name }}"
+          $dist = "obsidian-$ver-win-x64"
+          New-Item -ItemType Directory -Path $dist
+          Copy-Item -Path .\target\release\obsidian.exe -Destination $dist\
+          Copy-Item -Path .\Obsidian.ps1 -Destination $dist\
+          Copy-Item -Path .\Restore-Obsidian.ps1 -Destination $dist\
+          Copy-Item -Path .\powershell -Destination $dist\ -Recurse
+          Copy-Item -Path .\README.md -Destination $dist\
+          Copy-Item -Path .\LICENSE -Destination $dist\
+          Compress-Archive -Path $dist\* -DestinationPath "$dist.zip"
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: obsidian-*.zip

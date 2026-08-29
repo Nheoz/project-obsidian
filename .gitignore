@@ -1,0 +1,17 @@
+# Rust Cargo build artifacts
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# Obsidian Dynamic State & Logs
+obsidian-state/
+logs/
+*.log
+benchmark-*.json
+report.json
+
+# IDE & OS Artifacts
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini

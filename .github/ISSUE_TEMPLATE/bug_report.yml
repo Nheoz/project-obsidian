@@ -1,0 +1,27 @@
+name: Bug Report
+description: Report an unintended behavior or issue
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thank you for contributing to Project Obsidian!
+  - type: input
+    id: win-version
+    attributes:
+      label: Windows 11 Build Version
+      description: Run `winver` or `(Get-CimInstance Win32_OperatingSystem).BuildNumber`
+      placeholder: e.g. 26100 (24H2)
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description of the Problem
+      description: Explain what unexpected behavior occurred.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Obsidian Execution Log or Rollback Status
+      description: Attach snippets from `obsidian doctor` or `report.md`.
