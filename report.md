@@ -1,7 +1,7 @@
 # Project Obsidian — Execution & Optimization Report
 
-**Generated:** 2026-08-29T16:33:40.791803400+00:00
-**Applied Profile:** Audit/Export
+**Generated:** 2026-08-29T16:52:42.005924+00:00
+**Applied Profile:** Ultimate Workstation
 
 ## 1. System Baseline
 - **OS:** Microsoft Windows 11 Pro (Build 26200)
@@ -27,10 +27,10 @@
 
 ## 3. Performance Metrics
 
-- **RAM in Use:** 18.50 GB (59.9%)
-- **Active Processes:** 367
-- **Active Threads:** 367
-- **CPU Idle Load:** 5.2%
+- **RAM in Use:** 16.98 GB (55.0%)
+- **Active Processes:** 371
+- **Active Threads:** 371
+- **CPU Idle Load:** 4.9%
 
 ## 4. Rollback Readiness
 
