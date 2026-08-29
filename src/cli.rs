@@ -12,7 +12,7 @@ Windows 11 for gaming and AI development with zero placebo tweaks and guaranteed
 )]
 pub struct Cli {
     #[command(subcommand)]
-    pub command: Commands,
+    pub command: Option<Commands>,
 
     /// Output in JSON format for automated pipelines
     #[arg(short, long, global = true)]

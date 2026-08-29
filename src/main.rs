@@ -34,9 +34,19 @@ fn main() -> Result<()> {
     let windows = WindowsInfo::detect();
     let hardware = HardwareInfo::detect();
 
-    match args.command {
+    if let Some(cmd) = args.command {
+        execute_command(cmd, &windows, &hardware)?;
+    } else {
+        run_interactive_menu(&windows, &hardware)?;
+    }
+
+    Ok(())
+}
+
+fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo) -> Result<()> {
+    match cmd {
         Commands::Status => {
-            print_system_overview(&windows, &hardware);
+            print_system_overview(windows, hardware);
             PrivacyModule::audit()?;
             GamingModule::audit()?;
             DeveloperModule::audit()?;
@@ -44,7 +54,7 @@ fn main() -> Result<()> {
 
         Commands::Analyze => {
             println!("{}", "[*] INITIATING NON-DESTRUCTIVE DRY-RUN ANALYSIS".cyan().bold());
-            print_system_overview(&windows, &hardware);
+            print_system_overview(windows, hardware);
             PrivacyModule::audit()?;
             GamingModule::audit()?;
             DeveloperModule::audit()?;
@@ -148,8 +158,8 @@ fn main() -> Result<()> {
             let bench = Some(benchmark::BenchmarkMetrics::capture("export"));
             let report = reporting::ComprehensiveReport {
                 timestamp: chrono::Utc::now().to_rfc3339(),
-                windows,
-                hardware,
+                windows: windows.clone(),
+                hardware: hardware.clone(),
                 applied_profile: "Audit/Export".to_string(),
                 validation_checks: checks,
                 benchmark: bench,
@@ -157,6 +167,71 @@ fn main() -> Result<()> {
             report.save_all(&output)?;
             println!("{} {}", "[V] Diagnostic report successfully written to:".green(), output.display());
         }
+    }
+    Ok(())
+}
+
+fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Result<()> {
+    use std::io::{self, Write};
+
+    loop {
+        print_system_overview(windows, hardware);
+        println!("{}", "SELECT AN ACTION:".yellow().bold());
+        println!("  {} Analyze System (Dry-run, zero changes)", "[1]".cyan().bold());
+        println!("  {} AI & Gaming Doctor (Inspect CUDA, WSL2, Docker, Anticheats)", "[2]".cyan().bold());
+        println!("  {} System Benchmark (Measure RAM, CPU, active processes)", "[3]".cyan().bold());
+        println!("  {} Apply Profile: ULTIMATE (All safe privacy & gaming optimizations)", "[4]".green().bold());
+        println!("  {} Apply Profile: PRIVACY (Telemetry & ad blocking only)", "[5]".green().bold());
+        println!("  {} Apply Profile: GAMING (Latency & Game DVR only)", "[6]".green().bold());
+        println!("  {} Validate System Health (Post-flight zero-breakage check)", "[7]".cyan().bold());
+        println!("  {} Restore / Rollback (Revert system to exact prior state)", "[8]".magenta().bold());
+        println!("  {} Exit Project Obsidian", "[9]".dimmed());
+        print!("\n{}", "Enter option [1-9]: ".white().bold());
+        io::stdout().flush()?;
+
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
+        let choice = input.trim();
+
+        println!("\n");
+        match choice {
+            "1" => {
+                execute_command(Commands::Analyze, windows, hardware)?;
+            }
+            "2" => {
+                execute_command(Commands::Doctor, windows, hardware)?;
+            }
+            "3" => {
+                execute_command(Commands::Benchmark { label: "manual".to_string() }, windows, hardware)?;
+            }
+            "4" => {
+                execute_command(Commands::Apply { profile: cli::ProfileType::Ultimate, dry_run: false }, windows, hardware)?;
+            }
+            "5" => {
+                execute_command(Commands::Apply { profile: cli::ProfileType::Privacy, dry_run: false }, windows, hardware)?;
+            }
+            "6" => {
+                execute_command(Commands::Apply { profile: cli::ProfileType::Gaming, dry_run: false }, windows, hardware)?;
+            }
+            "7" => {
+                execute_command(Commands::Validate, windows, hardware)?;
+            }
+            "8" => {
+                execute_command(Commands::Restore { snapshot: None }, windows, hardware)?;
+            }
+            "9" | "q" | "exit" => {
+                println!("{}", "Exiting Project Obsidian. Stay fast, stay private!".cyan());
+                break;
+            }
+            _ => {
+                println!("{}", "[!] Invalid selection. Please enter a number between 1 and 9.".red());
+            }
+        }
+
+        println!("\n{}", "Press Enter to return to menu...".yellow());
+        let mut pause = String::new();
+        io::stdin().read_line(&mut pause)?;
+        print_banner();
     }
 
     Ok(())
