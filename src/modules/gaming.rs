@@ -77,14 +77,23 @@ impl GamingModule {
             dry_flag, dry_flag, dry_flag, dry_flag, dry_flag
         );
 
-        println!(
-            "{}",
-            "  [*] Disabling Game DVR background recording...".dimmed()
-        );
-        println!("{}", "      (Prevents Windows from constantly recording your screen to memory, eliminating micro-stutters)".green());
+        println!("{}", t!(
+            en: "  [*] Disabling Game DVR background recording...",
+            es: "  [*] Desactivando la grabación en segundo plano de Game DVR..."
+        ).dimmed());
+        println!("{}", t!(
+            en: "      (Prevents Windows from constantly recording your screen to memory, eliminating micro-stutters)",
+            es: "      (Evita que Windows grabe tu pantalla constantemente, eliminando micro-tirones)"
+        ).green());
 
-        println!("{}", "  [*] Enforcing Windows Game Mode...".dimmed());
-        println!("{}", "      (Instructs the OS scheduler to prioritize CPU and GPU resources to the active game window)".green());
+        println!("{}", t!(
+            en: "  [*] Enforcing Windows Game Mode...",
+            es: "  [*] Forzando el Modo Juego de Windows..."
+        ).dimmed());
+        println!("{}", t!(
+            en: "      (Instructs the OS scheduler to prioritize CPU and GPU resources to the active game window)",
+            es: "      (Instruye al sistema a priorizar recursos de CPU/GPU a la ventana activa del juego)"
+        ).green());
 
         let output = Command::new("powershell")
             .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &cmd])

@@ -97,8 +97,14 @@ impl DeveloperModule {
         );
 
         // 1. Enable Win32 Long Path support (essential for node_modules, Rust caches, Python envs)
-        println!("  {}", "[*] Enabling Win32 Long Path support...".dimmed());
-        println!("      {}", "(Allows deeply nested folders like 'node_modules' or Rust cache without crashing tools)".green());
+        println!("{}", t!(
+            en: "  [*] Enabling Win32 Long Path support...",
+            es: "  [*] Habilitando soporte Win32 para rutas largas..."
+        ).dimmed());
+        println!("{}", t!(
+            en: "      (Allows deeply nested folders like 'node_modules' or Rust cache without crashing tools)",
+            es: "      (Permite carpetas muy anidadas como 'node_modules' o caché de Rust sin colgar las herramientas)"
+        ).green());
         let longpath_cmd = "\
             Set-ItemProperty \
               -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem' \
@@ -119,18 +125,17 @@ impl DeveloperModule {
                 String::from_utf8_lossy(&out.stderr).trim()
             );
         }
-        println!("{}", "  [OK] Long Path support enabled.".green());
+        println!("{}", t!(en: "  [OK] Long Path support enabled.", es: "  [OK] Soporte para rutas largas habilitado.").green());
 
         // 2. Disable SysMain (Superfetch) — reduces random SSD writes during heavy compilation
-        println!(
-            "  {}",
-            "[*] Disabling SysMain (Superfetch) service...".dimmed()
-        );
-        println!(
-            "      {}",
-            "(Stops Windows from pre-loading apps into RAM, giving full disk I/O to compilers/IDE)"
-                .green()
-        );
+        println!("{}", t!(
+            en: "  [*] Disabling SysMain (Superfetch) service...",
+            es: "  [*] Desactivando el servicio SysMain (Superfetch)..."
+        ).dimmed());
+        println!("{}", t!(
+            en: "      (Stops Windows from pre-loading apps into RAM, giving full disk I/O to compilers/IDE)",
+            es: "      (Evita que Windows precargue apps en RAM, dedicando todo el I/O del disco a compiladores/IDE)"
+        ).green());
         let sysmain_cmd = "\
             $svc = Get-Service -Name 'SysMain' -ErrorAction SilentlyContinue; \
             if ($svc) { \
@@ -156,33 +161,32 @@ impl DeveloperModule {
         }
 
         // 3. Set NTFS disable last access time update — reduces filesystem overhead on large repos
-        println!("  {}", "[*] Disabling NTFS Last Access Time...".dimmed());
-        println!(
-            "      {}",
-            "(Speeds up 'git status' and build tools by not recording every time a file is read)"
-                .green()
-        );
+        println!("{}", t!(
+            en: "  [*] Disabling NTFS Last Access Time...",
+            es: "  [*] Desactivando la marca de Último Acceso NTFS..."
+        ).dimmed());
+        println!("{}", t!(
+            en: "      (Speeds up 'git status' and build tools by not recording every time a file is read)",
+            es: "      (Acelera 'git status' y herramientas de compilación al no registrar cada lectura de archivo)"
+        ).green());
         let ntfs_cmd = "fsutil behavior set disablelastaccess 1";
         let out = Command::new("cmd").args(["/c", ntfs_cmd]).output()?;
         if out.status.success() {
-            println!("{}", "  [OK] NTFS last access time disabled.".green());
+            println!("{}", t!(en: "  [OK] NTFS last access time disabled.", es: "  [OK] Tiempo de último acceso NTFS desactivado.").green());
         } else {
             // Non-critical — some Windows editions disallow this
-            println!(
-                "{}",
-                "  [!] NTFS last access tweak skipped (may require elevated fsutil).".yellow()
-            );
+            println!("{}", t!(en: "  [!] NTFS last access tweak skipped (may require elevated fsutil).", es: "  [!] Retoque de acceso NTFS omitido (puede requerir permisos).").yellow());
         }
 
         // 4. Set active power plan to High Performance for build machines
-        println!(
-            "  {}",
-            "[*] Activating High Performance power plan...".dimmed()
-        );
-        println!(
-            "      {}",
-            "(Ensures the CPU runs at maximum turbo clocks during long build processes)".green()
-        );
+        println!("{}", t!(
+            en: "  [*] Activating High Performance power plan...",
+            es: "  [*] Activando el Plan de Energía de Alto Rendimiento..."
+        ).dimmed());
+        println!("{}", t!(
+            en: "      (Ensures the CPU runs at maximum turbo clocks during long build processes)",
+            es: "      (Asegura que la CPU corra al máximo turbo durante largos procesos de compilación)"
+        ).green());
         let power_cmd = "powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c";
         let out = Command::new("cmd").args(["/c", power_cmd]).output()?;
         if out.status.success() {

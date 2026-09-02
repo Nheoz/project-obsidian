@@ -95,23 +95,32 @@ impl PrivacyModule {
             dry_flag, dry_flag, dry_flag, dry_flag, dry_flag, dry_flag, dry_flag, dry_flag, dry_flag
         );
 
-        println!(
-            "{}",
-            "  [*] Disabling Telemetry & Error Reporting services...".dimmed()
-        );
-        println!("{}", "      (Stops Windows from constantly sending diagnostic data and crash dumps to Microsoft servers)".green());
+        println!("{}", t!(
+            en: "  [*] Disabling Telemetry & Error Reporting services...",
+            es: "  [*] Desactivando servicios de Telemetría y Reporte de Errores..."
+        ).dimmed());
+        println!("{}", t!(
+            en: "      (Stops Windows from constantly sending diagnostic data and crash dumps to Microsoft servers)",
+            es: "      (Evita que Windows envíe datos de diagnóstico y volcados de errores a Microsoft)"
+        ).green());
 
-        println!(
-            "{}",
-            "  [*] Disabling diagnostic background tasks...".dimmed()
-        );
-        println!("{}", "      (Prevents scheduled telemetry sweeps like Compatibility Appraiser from burning CPU cycles)".green());
+        println!("{}", t!(
+            en: "  [*] Disabling diagnostic background tasks...",
+            es: "  [*] Desactivando tareas de diagnóstico en segundo plano..."
+        ).dimmed());
+        println!("{}", t!(
+            en: "      (Prevents scheduled telemetry sweeps like Compatibility Appraiser from burning CPU cycles)",
+            es: "      (Evita barridos de telemetría como el Compatibility Appraiser que consumen CPU inútilmente)"
+        ).green());
 
-        println!(
-            "{}",
-            "  [*] Enforcing Local Privacy Group Policies...".dimmed()
-        );
-        println!("{}", "      (Blocks advertising ID tracking, activity feed history, and typing data collection)".green());
+        println!("{}", t!(
+            en: "  [*] Enforcing Local Privacy Group Policies...",
+            es: "  [*] Aplicando Políticas de Grupo de Privacidad..."
+        ).dimmed());
+        println!("{}", t!(
+            en: "      (Blocks advertising ID tracking, activity feed history, and typing data collection)",
+            es: "      (Bloquea el ID de publicidad, el historial de actividad y la recolección de datos de escritura)"
+        ).green());
 
         let output = Command::new("powershell")
             .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &cmd])

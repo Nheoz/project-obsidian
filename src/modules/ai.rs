@@ -146,11 +146,14 @@ impl AiModule {
         println!("{}", "[+] Applying AI Workstation Optimizations...".cyan());
 
         // 1. Enable Hardware-Accelerated GPU Scheduling (HAGS) — registry tweak
-        println!(
-            "  {}",
-            "[*] Enabling Hardware-Accelerated GPU Scheduling (HAGS)...".dimmed()
-        );
-        println!("      {}", "(Offloads GPU scheduling from the CPU to the GPU itself, improving throughput for AI/Games)".green());
+        println!("{}", t!(
+            en: "  [*] Enabling Hardware-Accelerated GPU Scheduling (HAGS)...",
+            es: "  [*] Habilitando la Programación de GPU acelerada por hardware (HAGS)..."
+        ).dimmed());
+        println!("{}", t!(
+            en: "      (Offloads GPU scheduling from the CPU to the GPU itself, improving throughput for AI/Games)",
+            es: "      (Descarga la planificación de GPU de la CPU a la propia GPU, mejorando rendimiento en AI/Juegos)"
+        ).green());
         let hags_cmd = "\
             $path = 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers'; \
             if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }; \
@@ -171,14 +174,17 @@ impl AiModule {
                 String::from_utf8_lossy(&out.stderr).trim()
             );
         }
-        println!("{}", "  [OK] HAGS enabled.".green());
+        println!("{}", t!(en: "  [OK] HAGS enabled.", es: "  [OK] HAGS habilitado.").green());
 
         // 2. Disable GPU TDR timeout for long AI inference jobs (default 2s → 60s)
-        println!(
-            "  {}",
-            "[*] Setting GPU TDR timeout for AI inference (60s)...".dimmed()
-        );
-        println!("      {}", "(Prevents Windows from forcibly restarting your graphics driver during heavy AI image/text generation)".green());
+        println!("{}", t!(
+            en: "  [*] Setting GPU TDR timeout for AI inference (60s)...",
+            es: "  [*] Configurando el tiempo de espera TDR de la GPU para IA (60s)..."
+        ).dimmed());
+        println!("{}", t!(
+            en: "      (Prevents Windows from forcibly restarting your graphics driver during heavy AI image/text generation)",
+            es: "      (Evita que Windows reinicie el driver gráfico a la fuerza durante inferencias pesadas de IA)"
+        ).green());
         let tdr_cmd = "\
             $path = 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers'; \
             Set-ItemProperty -Path $path -Name 'TdrDelay' -Value 60 -Type DWord -Force; \
@@ -202,15 +208,14 @@ impl AiModule {
         println!("{}", "  [OK] GPU TDR timeout extended.".green());
 
         // 3. Disable NVIDIA Telemetry service if present
-        println!(
-            "  {}",
-            "[*] Disabling NVIDIA Telemetry Container...".dimmed()
-        );
-        println!(
-            "      {}",
-            "(Stops NVIDIA from sending driver usage data in the background, freeing up memory)"
-                .green()
-        );
+        println!("{}", t!(
+            en: "  [*] Disabling NVIDIA Telemetry Container...",
+            es: "  [*] Desactivando el Contenedor de Telemetría de NVIDIA..."
+        ).dimmed());
+        println!("{}", t!(
+            en: "      (Stops NVIDIA from sending driver usage data in the background, freeing up memory)",
+            es: "      (Evita que NVIDIA envíe datos de uso en segundo plano, liberando memoria)"
+        ).green());
         let nvtelem_cmd = "\
             $svc = Get-Service -Name 'NvTelemetryContainer' -ErrorAction SilentlyContinue; \
             if ($svc) { \
@@ -232,17 +237,20 @@ impl AiModule {
             .output()?;
         let result = String::from_utf8_lossy(&out.stdout).trim().to_string();
         if result == "Disabled" {
-            println!("{}", "  [OK] NVIDIA Telemetry Container disabled.".green());
+            println!("{}", t!(en: "  [OK] NVIDIA Telemetry Container disabled.", es: "  [OK] Contenedor de telemetría NVIDIA desactivado.").green());
         } else {
-            println!(
-                "{}",
-                "  [--] NVIDIA Telemetry Container not present (skip).".dimmed()
-            );
+            println!("{}", t!(en: "  [--] NVIDIA Telemetry Container not present (skip).", es: "  [--] Contenedor de telemetría NVIDIA no encontrado (omitido).").dimmed());
         }
 
         // 4. Optimize WSL2 memory config if WSL is installed
-        println!("  {}", "[*] Checking WSL2 memory configuration...".dimmed());
-        println!("      {}", "(Applies safe RAM/CPU limits to Windows Subsystem for Linux so it doesn't consume all system RAM)".green());
+        println!("{}", t!(
+            en: "  [*] Checking WSL2 memory configuration...",
+            es: "  [*] Comprobando la configuración de memoria de WSL2..."
+        ).dimmed());
+        println!("{}", t!(
+            en: "      (Applies safe RAM/CPU limits to Windows Subsystem for Linux so it doesn't consume all system RAM)",
+            es: "      (Aplica límites seguros de RAM/CPU a WSL para que no devore toda la RAM del sistema)"
+        ).green());
         let wsl_check = Command::new("wsl").args(["--status"]).output();
         if wsl_check.map(|o| o.status.success()).unwrap_or(false) {
             let wslconfig_path = dirs_home().join(".wslconfig");

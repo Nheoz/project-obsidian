@@ -2,6 +2,8 @@ mod benchmark;
 mod cli;
 mod embedded;
 mod hardware;
+#[macro_use]
+mod i18n;
 mod modules;
 mod profiles;
 mod reporting;
@@ -66,6 +68,9 @@ fn main() -> Result<()> {
     init_logging();
 
     let args = Cli::parse();
+
+    // Set initial language
+    i18n::set_language(args.lang.to_lowercase() == "es");
 
     // If launched with no subcommands (double-clicked in Explorer without admin):
     // Relaunch inside a dedicated elevated cmd.exe console window
@@ -227,16 +232,27 @@ fn execute_command(
                     "{}",
                     "  └─────────────────────────────────────────────────────────┘".yellow()
                 );
-                print!(
-                    "\n  Type {} to confirm, or press Enter to cancel: ",
-                    "YES".green().bold()
-                );
-                io::stdout().flush()?;
-                let mut confirm = String::new();
-                io::stdin().read_line(&mut confirm)?;
-                if confirm.trim() != "YES" {
-                    println!("{}", "\n  [!] Cancelled. Zero changes applied.".yellow());
-                    return Ok(());
+                if !dry_run {
+                    println!("{}", t!(
+                        en: "WARNING: You are about to apply destructive system optimizations.",
+                        es: "ADVERTENCIA: Estás a punto de aplicar optimizaciones de sistema destructivas."
+                    ).yellow().bold());
+                    println!("{}", t!(
+                        en: "A rollback snapshot will be captured, but a system restart may be required.",
+                        es: "Se capturará un snapshot de respaldo, pero puede ser necesario reiniciar el sistema."
+                    ).yellow());
+                    print!("\n{} ", t!(
+                        en: "Are you sure you want to proceed? Type YES to confirm:",
+                        es: "¿Estás seguro de que deseas proceder? Escribe YES para confirmar:"
+                    ).white().bold());
+                    io::stdout().flush()?;
+
+                    let mut confirm = String::new();
+                    io::stdin().read_line(&mut confirm)?;
+                    if confirm.trim().to_uppercase() != "YES" {
+                        println!("{}", t!(en: "[!] Operation aborted by user.", es: "[!] Operación abortada por el usuario.").red());
+                        return Ok(());
+                    }
                 }
                 println!();
             }
@@ -379,60 +395,71 @@ fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Resul
 
     loop {
         print_system_overview(windows, hardware);
-        println!("{}", "SELECT AN ACTION:".yellow().bold());
+        println!("{}", t!(en: "SELECT AN ACTION:", es: "SELECCIONA UNA ACCIÓN:").yellow().bold());
         println!(
-            "  {} Analyze System (Dry-run, zero changes)",
-            "[1]".cyan().bold()
+            "  {} {}",
+            "[1]".cyan().bold(),
+            t!(en: "Analyze System (Dry-run, zero changes)", es: "Analizar Sistema (Simulación, cero cambios)")
         );
         println!(
-            "  {} AI & Gaming Doctor (Inspect CUDA, WSL2, Docker, Anticheats)",
-            "[2]".cyan().bold()
+            "  {} {}",
+            "[2]".cyan().bold(),
+            t!(en: "AI & Gaming Doctor (Inspect CUDA, WSL2, Docker, Anticheats)", es: "Diagnóstico AI & Gaming (Inspeccionar CUDA, WSL2, Anticheats)")
         );
         println!(
-            "  {} System Benchmark (Measure RAM, CPU, active processes)",
-            "[3]".cyan().bold()
+            "  {} {}",
+            "[3]".cyan().bold(),
+            t!(en: "System Benchmark (Measure RAM, CPU, active processes)", es: "Benchmark del Sistema (Medir RAM, CPU, procesos activos)")
         );
         println!(
-            "  {} Apply Profile: ULTIMATE  (Privacy + Gaming + AI + Developer)",
-            "[4]".green().bold()
+            "  {} {}",
+            "[4]".green().bold(),
+            t!(en: "Apply Profile: ULTIMATE  (Privacy + Gaming + AI + Developer)", es: "Aplicar Perfil: ULTIMATE  (Privacidad + Gaming + AI + Desarrollador)")
         );
         println!(
-            "  {} Apply Profile: PRIVACY   (Telemetry & ad blocking only)",
-            "[5]".green().bold()
+            "  {} {}",
+            "[5]".green().bold(),
+            t!(en: "Apply Profile: PRIVACY   (Telemetry & ad blocking only)", es: "Aplicar Perfil: PRIVACY   (Solo bloquear telemetría y anuncios)")
         );
         println!(
-            "  {} Apply Profile: GAMING    (Latency & Game DVR only)",
-            "[6]".green().bold()
+            "  {} {}",
+            "[6]".green().bold(),
+            t!(en: "Apply Profile: GAMING    (Latency & Game DVR only)", es: "Aplicar Perfil: GAMING    (Solo optimizar latencia y Game DVR)")
         );
         println!(
-            "  {} Validate System Health (Post-flight zero-breakage check)",
-            "[7]".cyan().bold()
+            "  {} {}",
+            "[7]".cyan().bold(),
+            t!(en: "Validate System Health (Post-flight zero-breakage check)", es: "Validar Salud del Sistema (Chequeo post-optimización)")
         );
         println!(
-            "  {} Restore / Rollback (Revert system to exact prior state)",
-            "[8]".magenta().bold()
+            "  {} {}",
+            "[8]".magenta().bold(),
+            t!(en: "Restore / Rollback (Revert system to exact prior state)", es: "Restaurar / Rollback (Volver al estado exacto anterior)")
         );
         if !windows.is_admin {
             println!(
-                "  {} Elevate to Administrator (Trigger UAC Prompt)",
-                "[0]".yellow().bold()
+                "  {} {}",
+                "[0]".yellow().bold(),
+                t!(en: "Elevate to Administrator (Trigger UAC Prompt)", es: "Elevar a Administrador (Pedir permisos UAC)")
             );
         }
-        println!("  {} Exit Project Obsidian", "[9]".dimmed());
-        print!("\n{}", "Enter option: ".white().bold());
+        println!("  {} {}", "[L]".blue().bold(), t!(en: "Change Language (English / Español)", es: "Cambiar Idioma (Español / English)"));
+        println!("  {} {}", "[9]".dimmed(), t!(en: "Exit Project Obsidian", es: "Salir de Project Obsidian"));
+        print!("\n{}", t!(en: "Enter option: ", es: "Introduce opción: ").white().bold());
         io::stdout().flush()?;
 
         let mut input = String::new();
         io::stdin().read_line(&mut input)?;
-        let choice = input.trim();
+        let choice = input.trim().to_lowercase();
 
         println!("\n");
-        match choice {
+        match choice.as_str() {
+            "l" => {
+                i18n::toggle_language();
+                println!("{}", t!(en: "[*] Language changed to English.", es: "[*] Idioma cambiado a Español.").cyan());
+            }
             "0" => {
-                println!(
-                    "{}",
-                    "[*] Requesting Administrator elevation via UAC...".cyan()
-                );
+                println!("{}", t!(en: "[*] Requesting Administrator elevation via UAC...", es: "[*] Solicitando permisos de Administrador vía UAC...").cyan());
                 WindowsInfo::relaunch_as_admin()?;
             }
             "1" => {
@@ -498,19 +525,19 @@ fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Resul
             "9" | "q" | "exit" => {
                 println!(
                     "{}",
-                    "Exiting Project Obsidian. Stay fast, stay private!".cyan()
+                    t!(en: "Exiting Project Obsidian. Stay fast, stay private!", es: "Saliendo de Project Obsidian. ¡Mantente rápido y privado!").cyan()
                 );
                 break;
             }
             _ => {
                 println!(
                     "{}",
-                    "[!] Invalid selection. Please enter a valid option number.".red()
+                    t!(en: "[!] Invalid selection. Please enter a valid option number.", es: "[!] Selección inválida. Por favor introduce una opción válida.").red()
                 );
             }
         }
 
-        println!("\n{}", "Press Enter to return to menu...".yellow());
+        println!("\n{}", t!(en: "Press Enter to return to menu...", es: "Presiona Enter para volver al menú...").yellow());
         let mut pause = String::new();
         io::stdin().read_line(&mut pause)?;
         print_banner();

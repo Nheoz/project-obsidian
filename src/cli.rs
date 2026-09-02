@@ -25,6 +25,10 @@ pub struct Cli {
     /// Internal flag when spawned inside an elevated interactive console
     #[arg(long, hide = true)]
     pub interactive_terminal: bool,
+
+    /// Language for output (en or es)
+    #[arg(long, global = true, default_value = "en")]
+    pub lang: String,
 }
 
 #[derive(Subcommand, Debug)]
