@@ -1,55 +1,15 @@
-# Disaster Recovery & Rollback Engine
+﻿# Rollback & State Recovery
 
-## Atomic Snapshot Model
-Every modification applied by Project Obsidian is preceded by a snapshot transaction stored in `obsidian-state/snapshot-YYYYMMDD-HHMMSS.json`.
+Project Obsidian features an enterprise-grade atomic rollback engine. It never makes a permanent change without first recording the exact previous state of the system.
 
-### Snapshot Schema:
-```json
-{
-  "timestamp": "2026-08-29T18:25:00Z",
-  "profile": "Ultimate Workstation",
-  "windows": { ... },
-  "hardware": { ... },
-  "registry_items": [
-    {
-      "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
-      "name": "AllowTelemetry",
-      "previous_exists": true,
-      "previous_value": 1,
-      "previous_type": "DWord"
-    }
-  ],
-  "services": [
-    {
-      "name": "DiagTrack",
-      "previous_startup": "Automatic",
-      "previous_status": "Running"
-    }
-  ],
-  "tasks": [
-    {
-      "path": "\\Microsoft\\Windows\\Application Experience\\",
-      "name": "Microsoft Compatibility Appraiser",
-      "previous_state": "Ready"
-    }
-  ]
-}
-```
+## How it Works (v2.0)
 
-## How to Restore
-### Via Rust CLI:
-```powershell
-obsidian restore
-# or specify an exact snapshot:
-obsidian restore --snapshot obsidian-state\snapshot-20260829-182500.json
-```
+1. **Pre-flight Capture:** Before modifying a registry key, service, or task, Obsidian queries the live OS using native PowerShell APIs.
+2. **Atomic Snapshots:** The precise values (e.g., Value: 1, Type: DWord, Startup: Manual) are serialized into a JSON snapshot located in the obsidian-state/ directory.
+3. **Restoration:** When obsidian restore is called, the engine parses the latest JSON and reverses every change.
 
-### Via Standalone PowerShell Script (Works even if Rust binary is missing):
-```powershell
-.\Restore-Obsidian.ps1
-```
+## Integrity Verification (New in v2.0)
+After a rollback is executed, the recovery engine automatically re-queries the system to verify that the target services and tasks actually reverted to their original states. If a service gets stuck, the engine flags it in red in the console output.
 
-### Guarantees:
-- Restores exact previous startup types and running states of services.
-- Restores original registry values or deletes keys that were newly created.
-- Re-enables scheduled tasks that were previously active.
+## Standalone Fallback
+Because the rollback logic is embedded in Restore-Obsidian.ps1, you can restore your system even if the Rust binary is deleted. Simply right-click Restore-Obsidian.ps1 and run with PowerShell.

@@ -1,12 +1,21 @@
-# AI & Machine Learning Workstation Architecture
+﻿# AI Workstation Diagnostics & Runtimes
 
-## Goal
-Prepare Windows 11 as a first-class, low-overhead host for modern local AI inference, LLM fine-tuning, and CUDA-accelerated development.
+Project Obsidian configures your Windows 11 system for optimal local AI inference and development, ensuring long-running tasks don't crash and memory is properly allocated.
 
-## Diagnostic Pillars (`obsidian doctor` / `obsidian ai doctor`)
-1. **GPU Architecture**: Verifies NVIDIA Ada Lovelace / Blackwell / Ampere architecture, active Driver branch, and dedicated VRAM pool.
-2. **CUDA Toolkit & Compiler**: Checks for `nvcc` in system PATH, CUDA versions, and environment variables (`CUDA_PATH`).
-3. **WSL2 Virtualization**: Ensures the Linux subsystem is functional for PyTorch/vLLM/DeepSpeed workloads without virtual network isolation issues.
-4. **Docker Desktop & Container Daemon**: Audits integration with the WSL2 backend and NVIDIA Container Toolkit.
-5. **Local Inference Runtimes**: Detects installed inference runners (Ollama, LM Studio, vLLM, llama.cpp).
-6. **Zero Forced Installations**: Project Obsidian *diagnoses and recommends*, but never forcefully installs packages without explicit user intent.
+## Implemented Optimizations (v2.0)
+
+### 1. Hardware-Accelerated GPU Scheduling (HAGS)
+- **Registry Key:** HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\HwSchMode (Value: 2)
+- **Why:** Offloads GPU scheduling from the CPU to a dedicated hardware-based scheduling processor on the GPU. Reduces latency for CUDA and DirectML workloads.
+
+### 2. TDR Delay Extension (Timeout Detection and Recovery)
+- **Registry Keys:** TdrDelay and TdrDdiDelay set to 60 seconds.
+- **Why:** By default, Windows restarts the graphics driver if a GPU operation takes longer than 2 seconds. Large AI models (LLMs, Stable Diffusion) can easily block the GPU for longer than 2 seconds, causing crashes. This extends the timeout to 60s.
+
+### 3. NVIDIA Telemetry Container
+- **Action:** Disables the NvTelemetryContainer service.
+- **Why:** Frees up background threads and system RAM by preventing NVIDIA drivers from sending analytics data to NVIDIA servers.
+
+### 4. WSL2 Resource Boundaries
+- **Action:** Creates ~/.wslconfig (8GB RAM, 4 vCPUs, 4GB Swap) if WSL is installed.
+- **Why:** WSL2's default dynamic memory allocation can balloon and consume all host memory during large dataset processing. This applies a safe upper bound.
