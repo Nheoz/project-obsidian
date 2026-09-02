@@ -1,6 +1,6 @@
 # Project Obsidian — Execution & Optimization Report
 
-**Generated:** 2026-09-02T21:06:30.926603+00:00
+**Generated:** 2026-09-02T23:29:51.998361200+00:00
 **Applied Profile:** Ultimate Workstation
 
 ## 1. System Baseline
@@ -14,7 +14,7 @@
 
 | Component | Category | Status | Details |
 | :--- | :--- | :--- | :--- |
-| Windows Update Service | CoreOS | HEALTHY | Status: Running, Startup: Manual |
+| Windows Update Service | CoreOS | HEALTHY | Status: Stopped, Startup: Manual |
 | Microsoft Defender | Security | HEALTHY | Status: Running |
 | DNS Resolution | Network | HEALTHY | Resolving cloudflare.com: True |
 | Bluetooth Service | Hardware | HEALTHY | Status: Running, Startup: Manual |
@@ -26,10 +26,10 @@
 
 ## 3. Performance Metrics
 
-- **RAM in Use:** 20.74 GB (67.1%)
-- **Active Processes:** 299
-- **Active Threads:** 5887
-- **CPU Idle Load:** 7.2%
+- **RAM in Use:** 18.75 GB (60.7%)
+- **Active Processes:** 347
+- **Active Threads:** 7180
+- **CPU Idle Load:** 12.2%
 
 ## 4. Rollback Readiness
 
@@ -40,3 +40,18 @@ obsidian restore
 # or
 .\Restore-Obsidian.ps1
 ```
+
+
+---
+
+# Project Obsidian — Benchmark Comparison Report
+
+| Metric | Before | After | Delta | Verdict |
+| :--- | :--- | :--- | :--- | :--- |
+| **RAM In Use** | 18.76 GB | 18.75 GB | -0.01 GB | ≈ same |
+| **Memory Load** | 60.7% | 60.7% | +0.0% | ≈ same |
+| **Active Processes** | 345 | 347 | +2 | ↑ higher |
+| **Active Threads** | 7166 | 7180 | +14 | ↑ higher |
+| **CPU Usage** | 12.1% | 12.2% | +0.1% | ≈ same |
+
+*Captured via Windows Kernel interfaces. Zero synthetic estimation.*

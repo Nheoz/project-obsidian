@@ -74,8 +74,8 @@ fn main() -> Result<()> {
 
     // If launched with no subcommands (double-clicked in Explorer without admin):
     // Relaunch inside a dedicated elevated cmd.exe console window
-    if args.command.is_none() && !args.interactive_terminal {
-        if !WindowsInfo::check_is_admin() {
+    if args.command.is_none() && !args.interactive_terminal
+        && !WindowsInfo::check_is_admin() {
             let current_exe = std::env::current_exe()?;
             let script = format!(
                 "Start-Process cmd.exe -ArgumentList '/c \"\"{}\"\" --interactive-terminal' -Verb RunAs",
@@ -89,7 +89,6 @@ fn main() -> Result<()> {
             }
             return Ok(());
         }
-    }
 
     // --json: suppress colored output, emit JSON where applicable
     let json_mode = args.json;

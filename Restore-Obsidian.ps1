@@ -114,6 +114,8 @@ if ($snapshot.tasks) {
             Write-Host "  [!] Error restoring task $($t.name): $($_.Exception.Message)" -ForegroundColor Red
         }
     }
+}
+
 Write-Host "`n[4/4] Verifying Rollback Integrity..." -ForegroundColor Yellow
 $verifyFailed = 0
 

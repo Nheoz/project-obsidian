@@ -72,9 +72,9 @@ impl Snapshot {
             .filter_map(|e| e.ok())
             .map(|e| e.path())
             .filter(|p| {
-                p.extension().map_or(false, |ext| ext == "json")
+                p.extension().is_some_and(|ext| ext == "json")
                     && p.file_name()
-                        .map_or(false, |n| n.to_string_lossy().starts_with("snapshot-"))
+                        .is_some_and(|n| n.to_string_lossy().starts_with("snapshot-"))
             })
             .collect();
 

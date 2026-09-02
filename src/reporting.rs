@@ -46,7 +46,7 @@ impl ComprehensiveReport {
                 gpu.name, gpu.driver_version
             ));
         }
-        md.push_str("\n");
+        md.push('\n');
 
         md.push_str("## 2. Validation & Subsystem Health\n\n");
         md.push_str("| Component | Category | Status | Details |\n");
@@ -58,7 +58,7 @@ impl ComprehensiveReport {
                 v.component, v.category, icon, v.details
             ));
         }
-        md.push_str("\n");
+        md.push('\n');
 
         if let Some(b) = &self.benchmark {
             md.push_str("## 3. Performance Metrics\n\n");
