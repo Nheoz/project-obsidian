@@ -95,6 +95,24 @@ impl PrivacyModule {
             dry_flag, dry_flag, dry_flag, dry_flag, dry_flag, dry_flag, dry_flag, dry_flag, dry_flag
         );
 
+        println!(
+            "{}",
+            "  [*] Disabling Telemetry & Error Reporting services...".dimmed()
+        );
+        println!("{}", "      (Stops Windows from constantly sending diagnostic data and crash dumps to Microsoft servers)".green());
+
+        println!(
+            "{}",
+            "  [*] Disabling diagnostic background tasks...".dimmed()
+        );
+        println!("{}", "      (Prevents scheduled telemetry sweeps like Compatibility Appraiser from burning CPU cycles)".green());
+
+        println!(
+            "{}",
+            "  [*] Enforcing Local Privacy Group Policies...".dimmed()
+        );
+        println!("{}", "      (Blocks advertising ID tracking, activity feed history, and typing data collection)".green());
+
         let output = Command::new("powershell")
             .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &cmd])
             .output()?;
@@ -109,7 +127,7 @@ impl PrivacyModule {
 
         println!(
             "{}",
-            "  [OK] Telemetry services, policies, and background tasks configured.".green()
+            "  [OK] Telemetry services, policies, and background tasks secured.".green()
         );
         Ok(())
     }

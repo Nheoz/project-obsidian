@@ -150,6 +150,7 @@ impl AiModule {
             "  {}",
             "[*] Enabling Hardware-Accelerated GPU Scheduling (HAGS)...".dimmed()
         );
+        println!("      {}", "(Offloads GPU scheduling from the CPU to the GPU itself, improving throughput for AI/Games)".green());
         let hags_cmd = "\
             $path = 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers'; \
             if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }; \
@@ -170,16 +171,14 @@ impl AiModule {
                 String::from_utf8_lossy(&out.stderr).trim()
             );
         }
-        println!(
-            "{}",
-            "  [OK] HAGS enabled — GPU scheduling latency reduced for CUDA/DirectML.".green()
-        );
+        println!("{}", "  [OK] HAGS enabled.".green());
 
         // 2. Disable GPU TDR timeout for long AI inference jobs (default 2s → 60s)
         println!(
             "  {}",
             "[*] Setting GPU TDR timeout for AI inference (60s)...".dimmed()
         );
+        println!("      {}", "(Prevents Windows from forcibly restarting your graphics driver during heavy AI image/text generation)".green());
         let tdr_cmd = "\
             $path = 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers'; \
             Set-ItemProperty -Path $path -Name 'TdrDelay' -Value 60 -Type DWord -Force; \
@@ -200,15 +199,17 @@ impl AiModule {
                 String::from_utf8_lossy(&out.stderr).trim()
             );
         }
-        println!(
-            "{}",
-            "  [OK] GPU TDR timeout extended — prevents crashes during long model runs.".green()
-        );
+        println!("{}", "  [OK] GPU TDR timeout extended.".green());
 
         // 3. Disable NVIDIA Telemetry service if present
         println!(
             "  {}",
             "[*] Disabling NVIDIA Telemetry Container...".dimmed()
+        );
+        println!(
+            "      {}",
+            "(Stops NVIDIA from sending driver usage data in the background, freeing up memory)"
+                .green()
         );
         let nvtelem_cmd = "\
             $svc = Get-Service -Name 'NvTelemetryContainer' -ErrorAction SilentlyContinue; \
@@ -241,6 +242,7 @@ impl AiModule {
 
         // 4. Optimize WSL2 memory config if WSL is installed
         println!("  {}", "[*] Checking WSL2 memory configuration...".dimmed());
+        println!("      {}", "(Applies safe RAM/CPU limits to Windows Subsystem for Linux so it doesn't consume all system RAM)".green());
         let wsl_check = Command::new("wsl").args(["--status"]).output();
         if wsl_check.map(|o| o.status.success()).unwrap_or(false) {
             let wslconfig_path = dirs_home().join(".wslconfig");
@@ -249,11 +251,7 @@ impl AiModule {
                 let wslconfig =
                     "[wsl2]\nmemory=8GB\nprocessors=4\nswap=4GB\nlocalhostForwarding=true\n";
                 std::fs::write(&wslconfig_path, wslconfig).ok();
-                println!(
-                    "{}",
-                    "  [OK] WSL2 .wslconfig created (8GB RAM, 4 CPUs, 4GB swap for AI stacks)."
-                        .green()
-                );
+                println!("{}", "  [OK] WSL2 .wslconfig created.".green());
             } else {
                 println!(
                     "{}",

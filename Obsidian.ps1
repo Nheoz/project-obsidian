@@ -24,13 +24,23 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$RustBinary = Join-Path $ScriptDir "target\release\obsidian.exe"
-if (-not (Test-Path $RustBinary)) {
-    $RustBinary = Join-Path $ScriptDir "target\debug\obsidian.exe"
+
+# Priority order: next to this script, then dev build paths (for contributors)
+$RustBinary = $null
+$candidatePaths = @(
+    (Join-Path $ScriptDir "obsidian.exe"),           # Distribution: exe alongside script
+    (Join-Path $ScriptDir "target\release\obsidian.exe"), # Dev: cargo build --release
+    (Join-Path $ScriptDir "target\debug\obsidian.exe")    # Dev: cargo build
+)
+foreach ($candidate in $candidatePaths) {
+    if (Test-Path $candidate) {
+        $RustBinary = $candidate
+        break
+    }
 }
 
 # If the compiled Rust binary exists, delegate to obsidian.exe for maximum performance
-if (Test-Path $RustBinary) {
+if ($null -ne $RustBinary) {
     $argsList = @($Command.ToLower())
     if ($Command -eq 'Apply') {
         $argsList += "--profile"

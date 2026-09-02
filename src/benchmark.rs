@@ -41,15 +41,17 @@ impl BenchmarkMetrics {
         // sysinfo p.tasks() is Linux-only (reads /proc/[pid]/task/).
         // On Windows it always returns None, so we count threads via WMI instead.
         let total_threads: usize = {
-            let out = std::process::Command::new("powershell")
-                .args(["-NoProfile", "-Command",
-                    "(Get-CimInstance Win32_Process | Measure-Object -Property ThreadCount -Sum).Sum"])
+            std::process::Command::new("powershell")
+                .args([
+                    "-NoProfile",
+                    "-Command",
+                    "(Get-CimInstance Win32_Process | Measure-Object -Property ThreadCount -Sum).Sum",
+                ])
                 .output()
                 .ok()
                 .and_then(|o| String::from_utf8(o.stdout).ok())
                 .and_then(|s| s.trim().parse::<usize>().ok())
-                .unwrap_or(total_processes);
-            out
+                .unwrap_or(total_processes)
         };
 
         BenchmarkMetrics {
@@ -109,26 +111,150 @@ impl BenchmarkMetrics {
         Ok(())
     }
 
-    #[allow(dead_code)]
+    /// Compare two benchmark captures and return a formatted Markdown delta report.
     pub fn compare(before: &BenchmarkMetrics, after: &BenchmarkMetrics) -> String {
         let mem_diff = after.used_memory_gb - before.used_memory_gb;
         let proc_diff = (after.total_processes as isize) - (before.total_processes as isize);
+        let thread_diff = (after.total_threads as isize) - (before.total_threads as isize);
+        let cpu_diff = after.cpu_global_usage_percent - before.cpu_global_usage_percent;
+
+        // Emoji indicators for deltas
+        let mem_arrow = if mem_diff < -0.1 {
+            "↓ BETTER"
+        } else if mem_diff > 0.1 {
+            "↑ higher"
+        } else {
+            "≈ same"
+        };
+        let proc_arrow = if proc_diff < 0 {
+            "↓ BETTER"
+        } else if proc_diff > 0 {
+            "↑ higher"
+        } else {
+            "≈ same"
+        };
 
         format!(
             "# Project Obsidian — Benchmark Comparison Report\n\n\
-            | Metric | Before | After | Delta |\n\
-            | :--- | :--- | :--- | :--- |\n\
-            | **RAM In Use** | {:.2} GB | {:.2} GB | {:+.2} GB |\n\
-            | **Memory Load** | {:.1}% | {:.1}% | {:+.1}% |\n\
-            | **Active Processes** | {} | {} | {:+} |\n\
-            | **Active Threads** | {} | {} | {:+} |\n\
-            | **CPU Idle Load** | {:.1}% | {:.1}% | {:+.1}% |\n\n\
-            *Note: Real measurements captured via Windows Kernel telemetry interfaces. Zero synthetic estimation.*",
-            before.used_memory_gb, after.used_memory_gb, mem_diff,
-            before.memory_used_percent, after.memory_used_percent, after.memory_used_percent - before.memory_used_percent,
-            before.total_processes, after.total_processes, proc_diff,
-            before.total_threads, after.total_threads, (after.total_threads as isize) - (before.total_threads as isize),
-            before.cpu_global_usage_percent, after.cpu_global_usage_percent, after.cpu_global_usage_percent - before.cpu_global_usage_percent
+            | Metric | Before | After | Delta | Verdict |\n\
+            | :--- | :--- | :--- | :--- | :--- |\n\
+            | **RAM In Use** | {:.2} GB | {:.2} GB | {:+.2} GB | {} |\n\
+            | **Memory Load** | {:.1}% | {:.1}% | {:+.1}% | {} |\n\
+            | **Active Processes** | {} | {} | {:+} | {} |\n\
+            | **Active Threads** | {} | {} | {:+} | {} |\n\
+            | **CPU Usage** | {:.1}% | {:.1}% | {:+.1}% | {} |\n\n\
+            *Captured via Windows Kernel interfaces. Zero synthetic estimation.*",
+            before.used_memory_gb,
+            after.used_memory_gb,
+            mem_diff,
+            mem_arrow,
+            before.memory_used_percent,
+            after.memory_used_percent,
+            after.memory_used_percent - before.memory_used_percent,
+            mem_arrow,
+            before.total_processes,
+            after.total_processes,
+            proc_diff,
+            proc_arrow,
+            before.total_threads,
+            after.total_threads,
+            thread_diff,
+            if thread_diff < 0 {
+                "↓ BETTER"
+            } else if thread_diff > 0 {
+                "↑ higher"
+            } else {
+                "≈ same"
+            },
+            before.cpu_global_usage_percent,
+            after.cpu_global_usage_percent,
+            cpu_diff,
+            if cpu_diff < -1.0 {
+                "↓ BETTER"
+            } else if cpu_diff > 1.0 {
+                "↑ higher"
+            } else {
+                "≈ same"
+            },
         )
+    }
+
+    /// Print a delta comparison directly to the console in colored format.
+    pub fn print_comparison(before: &BenchmarkMetrics, after: &BenchmarkMetrics) {
+        println!(
+            "{}",
+            "================================================================================"
+                .cyan()
+        );
+        println!(
+            "{}",
+            "PROJECT OBSIDIAN — BEFORE vs AFTER COMPARISON"
+                .cyan()
+                .bold()
+        );
+        println!(
+            "{}",
+            "================================================================================"
+                .cyan()
+        );
+
+        let mem_diff = after.used_memory_gb - before.used_memory_gb;
+        let proc_diff = (after.total_processes as isize) - (before.total_processes as isize);
+
+        let fmt_delta_f64 = |d: f64| -> colored::ColoredString {
+            if d < -0.05 {
+                format!("{:+.2} ↓", d).green()
+            } else if d > 0.05 {
+                format!("{:+.2} ↑", d).yellow()
+            } else {
+                format!("{:+.2} ≈", d).white()
+            }
+        };
+        let fmt_delta_i = |d: isize| -> colored::ColoredString {
+            if d < 0 {
+                format!("{:+} ↓", d).green()
+            } else if d > 0 {
+                format!("{:+} ↑", d).yellow()
+            } else {
+                format!("{:+} ≈", d).white()
+            }
+        };
+
+        println!(
+            "  {:<25} : {:.2} → {:.2} GB  [{}]",
+            "RAM In Use",
+            before.used_memory_gb,
+            after.used_memory_gb,
+            fmt_delta_f64(mem_diff)
+        );
+        println!(
+            "  {:<25} : {} → {}  [{}]",
+            "Active Processes",
+            before.total_processes,
+            after.total_processes,
+            fmt_delta_i(proc_diff)
+        );
+        println!(
+            "  {:<25} : {} → {}  [{}]",
+            "Active Threads",
+            before.total_threads,
+            after.total_threads,
+            fmt_delta_i((after.total_threads as isize) - (before.total_threads as isize))
+        );
+        println!(
+            "  {:<25} : {:.1}% → {:.1}%  [{}]",
+            "CPU Usage",
+            before.cpu_global_usage_percent,
+            after.cpu_global_usage_percent,
+            fmt_delta_f64(
+                (after.cpu_global_usage_percent - before.cpu_global_usage_percent) as f64
+            )
+        );
+
+        println!(
+            "{}",
+            "================================================================================"
+                .cyan()
+        );
     }
 }

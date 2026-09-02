@@ -98,6 +98,7 @@ impl DeveloperModule {
 
         // 1. Enable Win32 Long Path support (essential for node_modules, Rust caches, Python envs)
         println!("  {}", "[*] Enabling Win32 Long Path support...".dimmed());
+        println!("      {}", "(Allows deeply nested folders like 'node_modules' or Rust cache without crashing tools)".green());
         let longpath_cmd = "\
             Set-ItemProperty \
               -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem' \
@@ -118,17 +119,17 @@ impl DeveloperModule {
                 String::from_utf8_lossy(&out.stderr).trim()
             );
         }
-        println!(
-            "{}",
-            "  [OK] Long Path support enabled — fixes deep node_modules/Rust cache path errors."
-                .green()
-        );
+        println!("{}", "  [OK] Long Path support enabled.".green());
 
         // 2. Disable SysMain (Superfetch) — reduces random SSD writes during heavy compilation
         println!(
             "  {}",
-            "[*] Disabling SysMain (Superfetch) to reduce I/O interference during builds..."
-                .dimmed()
+            "[*] Disabling SysMain (Superfetch) service...".dimmed()
+        );
+        println!(
+            "      {}",
+            "(Stops Windows from pre-loading apps into RAM, giving full disk I/O to compilers/IDE)"
+                .green()
         );
         let sysmain_cmd = "\
             $svc = Get-Service -Name 'SysMain' -ErrorAction SilentlyContinue; \
@@ -149,23 +150,22 @@ impl DeveloperModule {
             .output()?;
         let result = String::from_utf8_lossy(&out.stdout).trim().to_string();
         if result == "Disabled" {
-            println!(
-                "{}",
-                "  [OK] SysMain disabled — compiler cache I/O now uncontested.".green()
-            );
+            println!("{}", "  [OK] SysMain disabled.".green());
         } else {
             println!("{}", "  [--] SysMain not present (skip).".dimmed());
         }
 
         // 3. Set NTFS disable last access time update — reduces filesystem overhead on large repos
+        println!("  {}", "[*] Disabling NTFS Last Access Time...".dimmed());
         println!(
-            "  {}",
-            "[*] Disabling NTFS Last Access Time updates for large repo performance...".dimmed()
+            "      {}",
+            "(Speeds up 'git status' and build tools by not recording every time a file is read)"
+                .green()
         );
         let ntfs_cmd = "fsutil behavior set disablelastaccess 1";
         let out = Command::new("cmd").args(["/c", ntfs_cmd]).output()?;
         if out.status.success() {
-            println!("{}", "  [OK] NTFS last access time disabled — improves git/cargo performance on large repos.".green());
+            println!("{}", "  [OK] NTFS last access time disabled.".green());
         } else {
             // Non-critical — some Windows editions disallow this
             println!(
@@ -179,14 +179,14 @@ impl DeveloperModule {
             "  {}",
             "[*] Activating High Performance power plan...".dimmed()
         );
+        println!(
+            "      {}",
+            "(Ensures the CPU runs at maximum turbo clocks during long build processes)".green()
+        );
         let power_cmd = "powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c";
         let out = Command::new("cmd").args(["/c", power_cmd]).output()?;
         if out.status.success() {
-            println!(
-                "{}",
-                "  [OK] High Performance plan active — no CPU clock throttling during builds."
-                    .green()
-            );
+            println!("{}", "  [OK] High Performance plan active.".green());
         } else {
             println!(
                 "{}",
@@ -196,9 +196,11 @@ impl DeveloperModule {
         }
 
         // 5. Increase system file cache working set for large codebases (SetSystemFileCacheSize)
+        println!("  {}", "[*] Tuning system file cache...".dimmed());
         println!(
-            "  {}",
-            "[*] Tuning system file cache for large codebase performance...".dimmed()
+            "      {}",
+            "(Allows Windows to cache more project files in RAM, speeding up frequent compiles)"
+                .green()
         );
         let cache_cmd = "\
             $path = 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management'; \

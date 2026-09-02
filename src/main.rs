@@ -21,12 +21,11 @@ use modules::{
 use profiles::OptimizationProfile;
 use rollback::RollbackEngine;
 use snapshot::Snapshot;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use validation::ValidationEngine;
 use windows::WindowsInfo;
 
-/// Returns a path resolved relative to the directory containing the executable.
-/// Falls back to the provided name if the exe path cannot be determined.
+/// Returns the directory containing the running executable.
 fn exe_dir() -> PathBuf {
     std::env::current_exe()
         .ok()
@@ -34,14 +33,42 @@ fn exe_dir() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("."))
 }
 
+/// Initialize the tracing logger: always writes DEBUG+ to a log file next to the exe.
+fn init_logging() {
+    use tracing_subscriber::fmt;
+    use tracing_subscriber::prelude::*;
+
+    let log_dir = exe_dir();
+    let log_file = log_dir.join("obsidian.log");
+
+    // File appender — keeps a persistent trace of every run
+    if let Ok(file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_file)
+    {
+        let file_layer = fmt::layer()
+            .with_writer(move || {
+                file.try_clone()
+                    .unwrap_or_else(|_| std::fs::File::create("/dev/null").unwrap())
+            })
+            .with_ansi(false)
+            .with_target(false);
+
+        let _ = tracing_subscriber::registry().with(file_layer).try_init();
+    }
+}
+
 fn main() -> Result<()> {
     #[cfg(windows)]
     let _ = colored::control::set_virtual_terminal(true);
 
+    init_logging();
+
     let args = Cli::parse();
 
-    // If launched with no subcommands (e.g. double-clicked in Explorer by standard user):
-    // Relaunch immediately inside a dedicated Administrator Command Prompt console window
+    // If launched with no subcommands (double-clicked in Explorer without admin):
+    // Relaunch inside a dedicated elevated cmd.exe console window
     if args.command.is_none() && !args.interactive_terminal {
         if !WindowsInfo::check_is_admin() {
             let current_exe = std::env::current_exe()?;
@@ -49,20 +76,30 @@ fn main() -> Result<()> {
                 "Start-Process cmd.exe -ArgumentList '/c \"\"{}\"\" --interactive-terminal' -Verb RunAs",
                 current_exe.display()
             );
-            let _ = std::process::Command::new("powershell")
+            let spawn_result = std::process::Command::new("powershell")
                 .args(["-NoProfile", "-Command", &script])
                 .spawn();
+            if spawn_result.is_err() {
+                eprintln!("{}", "[!] Failed to launch elevated console. Please run obsidian.exe as Administrator manually.".red());
+            }
             return Ok(());
         }
     }
 
-    print_banner();
+    // --json: suppress colored output, emit JSON where applicable
+    let json_mode = args.json;
+    // --verbose: pass-through stdout from PowerShell subprocesses
+    let _verbose = args.verbose;
+
+    if !json_mode {
+        print_banner();
+    }
 
     let windows = WindowsInfo::detect();
     let hardware = HardwareInfo::detect();
 
     if let Some(cmd) = args.command {
-        execute_command(cmd, &windows, &hardware)?;
+        execute_command(cmd, &windows, &hardware, json_mode)?;
     } else {
         run_interactive_menu(&windows, &hardware)?;
     }
@@ -70,9 +107,26 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo) -> Result<()> {
+fn execute_command(
+    cmd: Commands,
+    windows: &WindowsInfo,
+    hardware: &HardwareInfo,
+    json_mode: bool,
+) -> Result<()> {
     match cmd {
         Commands::Status => {
+            if json_mode {
+                let val = serde_json::json!({
+                    "os": windows.caption,
+                    "build": windows.build_number,
+                    "edition": windows.edition,
+                    "is_admin": windows.is_admin,
+                    "cpu": hardware.cpu_brand,
+                    "ram_gb": hardware.total_memory_gb,
+                });
+                println!("{}", serde_json::to_string_pretty(&val)?);
+                return Ok(());
+            }
             print_system_overview(windows, hardware);
             PrivacyModule::audit()?;
             GamingModule::audit()?;
@@ -105,11 +159,19 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
         }
 
         Commands::Benchmark { label } => {
+            println!("{}", "  [*] Collecting system metrics...".dimmed());
             let metrics = benchmark::BenchmarkMetrics::capture(&label);
-            metrics.print_summary();
-            let out_file = format!("benchmark-{}.json", label);
-            metrics.save_to_file(Path::new(&out_file))?;
-            println!("  [OK] Saved benchmark metrics to: {}", out_file.green());
+            if json_mode {
+                println!("{}", serde_json::to_string_pretty(&metrics)?);
+            } else {
+                metrics.print_summary();
+            }
+            let out_path = exe_dir().join(format!("benchmark-{}.json", label));
+            metrics.save_to_file(&out_path)?;
+            println!(
+                "  [OK] Saved benchmark metrics to: {}",
+                out_path.display().to_string().green()
+            );
         }
 
         Commands::Validate => {
@@ -122,6 +184,8 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
 
         Commands::Apply { profile, dry_run } => {
             let opt_profile = OptimizationProfile::from_type(profile);
+            tracing::info!(profile = %opt_profile.name, dry_run, "Applying profile");
+
             println!(
                 "{} [{}] (DryRun: {})",
                 "[*] APPLYING PROFILE:".cyan().bold(),
@@ -141,20 +205,56 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
                 return Ok(());
             }
 
+            // ── Confirmation prompt (skip in dry-run or non-interactive) ──────────
+            if !dry_run {
+                use std::io::{self, Write};
+                println!();
+                println!(
+                    "{}",
+                    "  ┌─────────────────────────────────────────────────────────┐".yellow()
+                );
+                println!(
+                    "{}",
+                    "  │  ⚠  This will apply permanent changes to your system.   │"
+                        .yellow()
+                        .bold()
+                );
+                println!(
+                    "{}",
+                    "  │     A rollback snapshot will be saved automatically.     │".yellow()
+                );
+                println!(
+                    "{}",
+                    "  └─────────────────────────────────────────────────────────┘".yellow()
+                );
+                print!(
+                    "\n  Type {} to confirm, or press Enter to cancel: ",
+                    "YES".green().bold()
+                );
+                io::stdout().flush()?;
+                let mut confirm = String::new();
+                io::stdin().read_line(&mut confirm)?;
+                if confirm.trim() != "YES" {
+                    println!("{}", "\n  [!] Cancelled. Zero changes applied.".yellow());
+                    return Ok(());
+                }
+                println!();
+            }
+
             let mut snap = Snapshot::new(&opt_profile.name, windows.clone(), hardware.clone());
 
-            // 1. Capture Pre-Flight Benchmark
+            // 1. Pre-Flight Benchmark
             println!(
                 "\n{}",
-                "[1/4] Capturing pre-flight performance baseline...".yellow()
+                "[1/5] Capturing pre-flight performance baseline...".yellow()
             );
             let bench_before = benchmark::BenchmarkMetrics::capture("pre-apply");
             bench_before.print_summary();
 
-            // 2. Apply Modules Based on Profile
+            // 2. Apply Modules
             println!(
                 "\n{}",
-                "[2/4] Executing configuration changes safely...".yellow()
+                "[2/5] Executing configuration changes safely...".yellow()
             );
             if opt_profile.enable_privacy {
                 PrivacyModule::apply(dry_run, &mut snap)?;
@@ -182,24 +282,42 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
             // 4. Post-Flight Health Validation
             println!(
                 "\n{}",
-                "[3/4] Running post-flight zero-breakage validation...".yellow()
+                "[3/5] Running post-flight zero-breakage validation...".yellow()
             );
             let checks = ValidationEngine::run_all()?;
 
-            // 5. Generate Report
+            // 5. Post-Flight Benchmark + Delta Comparison
             println!(
                 "\n{}",
-                "[4/4] Generating comprehensive execution report...".yellow()
+                "[4/5] Capturing post-apply performance metrics...".yellow()
             );
+            let bench_after = benchmark::BenchmarkMetrics::capture("post-apply");
+            benchmark::BenchmarkMetrics::print_comparison(&bench_before, &bench_after);
+
+            // 6. Generate Report
+            println!(
+                "\n{}",
+                "[5/5] Generating comprehensive execution report...".yellow()
+            );
+            let compare_md = benchmark::BenchmarkMetrics::compare(&bench_before, &bench_after);
             let report = reporting::ComprehensiveReport {
                 timestamp: chrono::Utc::now().to_rfc3339(),
                 windows: windows.clone(),
                 hardware: hardware.clone(),
-                applied_profile: opt_profile.name,
+                applied_profile: opt_profile.name.clone(),
                 validation_checks: checks,
-                benchmark: Some(bench_before),
+                benchmark: Some(bench_after),
             };
-            report.save_all(&exe_dir().join("report.md"))?;
+            let report_path = exe_dir().join("report.md");
+            report.save_all(&report_path)?;
+            // Append the benchmark delta to the report
+            let _ = std::fs::OpenOptions::new()
+                .append(true)
+                .open(&report_path)
+                .and_then(|mut f| {
+                    use std::io::Write;
+                    writeln!(f, "\n\n---\n\n{}", compare_md)
+                });
             println!("{}", "  [OK] Saved report.md and report.json".green());
 
             println!(
@@ -211,12 +329,17 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
                 "{}",
                 "[V] PROJECT OBSIDIAN APPLIED SUCCESSFULLY.".green().bold()
             );
-            println!("{}", "    System is optimized for low latency, zero telemetry bloat, and peak stability.".white());
+            println!(
+                "{}",
+                "    System is optimized for low latency, zero telemetry bloat, and peak stability.".white()
+            );
             println!(
                 "{}",
                 "================================================================================"
                     .cyan()
             );
+
+            tracing::info!(profile = %opt_profile.name, "Profile applied successfully");
         }
 
         Commands::Export { output } => {
@@ -230,12 +353,22 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
                 validation_checks: checks,
                 benchmark: bench,
             };
-            report.save_all(&output)?;
-            println!(
-                "{} {}",
-                "[V] Diagnostic report successfully written to:".green(),
-                output.display()
-            );
+            if json_mode {
+                let json = serde_json::to_string_pretty(&serde_json::json!({
+                    "timestamp": report.timestamp,
+                    "profile": report.applied_profile,
+                    "os": report.windows.caption,
+                    "build": report.windows.build_number,
+                }))?;
+                println!("{}", json);
+            } else {
+                report.save_all(&output)?;
+                println!(
+                    "{} {}",
+                    "[V] Diagnostic report successfully written to:".green(),
+                    output.display()
+                );
+            }
         }
     }
     Ok(())
@@ -260,15 +393,15 @@ fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Resul
             "[3]".cyan().bold()
         );
         println!(
-            "  {} Apply Profile: ULTIMATE (All safe privacy & gaming optimizations)",
+            "  {} Apply Profile: ULTIMATE  (Privacy + Gaming + AI + Developer)",
             "[4]".green().bold()
         );
         println!(
-            "  {} Apply Profile: PRIVACY (Telemetry & ad blocking only)",
+            "  {} Apply Profile: PRIVACY   (Telemetry & ad blocking only)",
             "[5]".green().bold()
         );
         println!(
-            "  {} Apply Profile: GAMING (Latency & Game DVR only)",
+            "  {} Apply Profile: GAMING    (Latency & Game DVR only)",
             "[6]".green().bold()
         );
         println!(
@@ -303,10 +436,10 @@ fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Resul
                 WindowsInfo::relaunch_as_admin()?;
             }
             "1" => {
-                execute_command(Commands::Analyze, windows, hardware)?;
+                execute_command(Commands::Analyze, windows, hardware, false)?;
             }
             "2" => {
-                execute_command(Commands::Doctor, windows, hardware)?;
+                execute_command(Commands::Doctor, windows, hardware, false)?;
             }
             "3" => {
                 execute_command(
@@ -315,6 +448,7 @@ fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Resul
                     },
                     windows,
                     hardware,
+                    false,
                 )?;
             }
             "4" => {
@@ -325,6 +459,7 @@ fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Resul
                     },
                     windows,
                     hardware,
+                    false,
                 )?;
             }
             "5" => {
@@ -335,6 +470,7 @@ fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Resul
                     },
                     windows,
                     hardware,
+                    false,
                 )?;
             }
             "6" => {
@@ -345,13 +481,19 @@ fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Resul
                     },
                     windows,
                     hardware,
+                    false,
                 )?;
             }
             "7" => {
-                execute_command(Commands::Validate, windows, hardware)?;
+                execute_command(Commands::Validate, windows, hardware, false)?;
             }
             "8" => {
-                execute_command(Commands::Restore { snapshot: None }, windows, hardware)?;
+                execute_command(
+                    Commands::Restore { snapshot: None },
+                    windows,
+                    hardware,
+                    false,
+                )?;
             }
             "9" | "q" | "exit" => {
                 println!(

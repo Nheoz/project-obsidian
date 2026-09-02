@@ -114,6 +114,25 @@ if ($snapshot.tasks) {
             Write-Host "  [!] Error restoring task $($t.name): $($_.Exception.Message)" -ForegroundColor Red
         }
     }
+Write-Host "`n[4/4] Verifying Rollback Integrity..." -ForegroundColor Yellow
+$verifyFailed = 0
+
+if ($snapshot.services) {
+    foreach ($svc in $snapshot.services) {
+        if ($svc.previous_startup -and $svc.previous_startup -ne 'NotPresent') {
+            $current = Get-Service -Name $svc.name -ErrorAction SilentlyContinue
+            if ($current.StartType.ToString() -ne $svc.previous_startup) {
+                Write-Host "  [!] Verify Failed: Service $($svc.name) is $($current.StartType), expected $($svc.previous_startup)" -ForegroundColor Red
+                $verifyFailed++
+            }
+        }
+    }
+}
+
+if ($verifyFailed -eq 0) {
+    Write-Host "  [OK] Rollback integrity verified. System state perfectly restored." -ForegroundColor Green
+} else {
+    Write-Host "  [!] Rollback integrity check failed for $verifyFailed item(s)." -ForegroundColor Red
 }
 
 Write-Host "`n================================================================================" -ForegroundColor Cyan

@@ -1,8 +1,9 @@
 [package]
 name = "obsidian"
-version = "1.0.0"
+version = "2.0.0"
 edition = "2021"
-authors = ["Antigravity Engineering <contact@project-obsidian.dev>"]
+rust-version = "1.75"
+authors = ["NheozProject <hola@synkrobyte.com>"]
 description = "Forge Windows 11 into a Privacy-First AI & Gaming Workstation"
 readme = "README.md"
 license = "MIT"
@@ -16,7 +17,6 @@ serde_json = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 anyhow = "1.0"
-thiserror = "2.0"
 colored = "2.1"
 chrono = { version = "0.4", features = ["serde"] }
 sysinfo = "0.33"
