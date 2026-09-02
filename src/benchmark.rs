@@ -38,11 +38,19 @@ impl BenchmarkMetrics {
         let cpu_usage = sys.global_cpu_usage();
         let total_processes = sys.processes().len();
 
-        let total_threads = sys
-            .processes()
-            .values()
-            .map(|p| p.tasks().map(|t| t.len()).unwrap_or(1))
-            .sum();
+        // sysinfo p.tasks() is Linux-only (reads /proc/[pid]/task/).
+        // On Windows it always returns None, so we count threads via WMI instead.
+        let total_threads: usize = {
+            let out = std::process::Command::new("powershell")
+                .args(["-NoProfile", "-Command",
+                    "(Get-CimInstance Win32_Process | Measure-Object -Property ThreadCount -Sum).Sum"])
+                .output()
+                .ok()
+                .and_then(|o| String::from_utf8(o.stdout).ok())
+                .and_then(|s| s.trim().parse::<usize>().ok())
+                .unwrap_or(total_processes);
+            out
+        };
 
         BenchmarkMetrics {
             timestamp: chrono::Utc::now().to_rfc3339(),
@@ -84,7 +92,7 @@ impl BenchmarkMetrics {
         );
         println!(
             "  {:<25} : {:.1}%",
-            "CPU Idle Load", self.cpu_global_usage_percent
+            "CPU Usage", self.cpu_global_usage_percent
         );
         println!("  {:<25} : {}", "Active Processes", self.total_processes);
         println!("  {:<25} : {}", "Active Threads", self.total_threads);

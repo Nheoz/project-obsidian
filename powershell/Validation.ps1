@@ -69,11 +69,13 @@ function Test-ObsidianHealth {
     $wslOk = ($null -ne $wslCmd)
     Add-HealthCheck -Component 'WSL2 Command' -Category 'AI/Developer' -Passed $wslOk -Details "Path: $($wslCmd.Source)"
 
-    # 9. NVIDIA Driver & Display
-    $gpu = Get-CimInstance Win32_VideoController | Where-Object { $_.Name -like '*NVIDIA*' } | Select-Object -First 1
+    # 9. GPU Driver & Display (any dedicated GPU — NVIDIA, AMD, Intel Arc)
+    $gpu = Get-CimInstance Win32_VideoController | Where-Object {
+        $_.Name -notlike '*Microsoft Basic*' -and $_.Name -notlike '*Remote*' -and $_.AdapterRAM -gt 0
+    } | Select-Object -First 1
     $gpuOk = ($null -ne $gpu)
-    $gpuDetails = if ($gpuOk) { "$($gpu.Name) [Driver: $($gpu.DriverVersion)]" } else { "No NVIDIA GPU detected" }
-    Add-HealthCheck -Component 'NVIDIA Graphics Subsystem' -Category 'Hardware' -Passed $gpuOk -Details $gpuDetails
+    $gpuDetails = if ($gpuOk) { "$($gpu.Name) [Driver: $($gpu.DriverVersion)]" } else { "No dedicated GPU detected" }
+    Add-HealthCheck -Component 'GPU Display Subsystem' -Category 'Hardware' -Passed $gpuOk -Details $gpuDetails
 
     # 10. Cryptographic & RPC Core
     $crypt = Get-Service -Name 'CryptSvc' -ErrorAction SilentlyContinue

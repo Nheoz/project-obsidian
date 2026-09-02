@@ -21,9 +21,18 @@ use modules::{
 use profiles::OptimizationProfile;
 use rollback::RollbackEngine;
 use snapshot::Snapshot;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use validation::ValidationEngine;
 use windows::WindowsInfo;
+
+/// Returns a path resolved relative to the directory containing the executable.
+/// Falls back to the provided name if the exe path cannot be determined.
+fn exe_dir() -> PathBuf {
+    std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|d| d.to_path_buf()))
+        .unwrap_or_else(|| PathBuf::from("."))
+}
 
 fn main() -> Result<()> {
     #[cfg(windows)]
@@ -108,7 +117,7 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
         }
 
         Commands::Restore { snapshot } => {
-            RollbackEngine::execute(Path::new("obsidian-state"), snapshot)?;
+            RollbackEngine::execute(&exe_dir().join("obsidian-state"), snapshot)?;
         }
 
         Commands::Apply { profile, dry_run } => {
@@ -162,7 +171,7 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
 
             // 3. Save Atomic Snapshot
             if !dry_run {
-                let saved_snap_path = snap.save(Path::new("obsidian-state"))?;
+                let saved_snap_path = snap.save(&exe_dir().join("obsidian-state"))?;
                 println!(
                     "{} {}",
                     "  [OK] Atomic rollback snapshot saved:".green(),
@@ -190,7 +199,7 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
                 validation_checks: checks,
                 benchmark: Some(bench_before),
             };
-            report.save_all(Path::new("report.md"))?;
+            report.save_all(&exe_dir().join("report.md"))?;
             println!("{}", "  [OK] Saved report.md and report.json".green());
 
             println!(
