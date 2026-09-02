@@ -3,19 +3,19 @@
     Pester Integration & Safety Tests for Project Obsidian PowerShell Layer
 #>
 
-BeforeAll {
-    $script:PSScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-    $script:RepoRoot = Resolve-Path (Join-Path $script:PSScriptRoot "..\..")
-    $script:PsDir = Join-Path $script:RepoRoot "powershell"
-
-    . (Join-Path $script:PsDir "Registry.ps1")
-    . (Join-Path $script:PsDir "Services.ps1")
-    . (Join-Path $script:PsDir "ScheduledTasks.ps1")
-    . (Join-Path $script:PsDir "Policies.ps1")
-    . (Join-Path $script:PsDir "Validation.ps1")
-}
-
 Describe "Project Obsidian - Security & Core OS Protection Tests" {
+    BeforeAll {
+        $script:PsDir = Join-Path $PWD "powershell"
+        if (-not (Test-Path $script:PsDir)) {
+            $script:PsDir = Resolve-Path (Join-Path $PSScriptRoot "..\..\powershell") | Select-Object -ExpandProperty Path
+        }
+
+        . (Join-Path $script:PsDir "Registry.ps1")
+        . (Join-Path $script:PsDir "Services.ps1")
+        . (Join-Path $script:PsDir "ScheduledTasks.ps1")
+        . (Join-Path $script:PsDir "Policies.ps1")
+        . (Join-Path $script:PsDir "Validation.ps1")
+    }
     Context "Critical Service Immutability Protection" {
         It "Must permanently forbid modification of Windows Update (wuauserv)" {
             (Test-IsServiceProtected -ServiceName 'wuauserv') | Should -Be $true
