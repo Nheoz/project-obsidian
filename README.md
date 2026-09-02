@@ -45,6 +45,12 @@ $$\mathbf{SECURITY} > \mathbf{STABILITY} > \mathbf{COMPATIBILITY} > \mathbf{PRIV
 - ✅ **AI & Virtualization Ready**: Zero interference with WSL2, Docker Desktop, CUDA compilers, or Python model runtimes.
 - ✅ **100% Reversible**: Every single modification is backed up into atomic snapshots (`obsidian-state/`) with instant rollback.
 
+### ✨ What's New in v2.0
+- **Total Transparency**: The CLI now explains *exactly* what each tweak does in simple English before applying it.
+- **Empirical Benchmarking**: Real-time Before/After metrics delta comparing RAM, CPU, Processes, and active Threads.
+- **Enhanced Safety**: New interactive warnings before destructive operations and deep integrity checks post-rollback.
+- **Robustness**: Background CI testing (Rust `cargo test`, PowerShell `PSScriptAnalyzer`) and persistent `obsidian.log` diagnostic traces.
+
 ---
 
 ## ⚡ Quick Start
@@ -159,25 +165,21 @@ Project Obsidian rejects vague marketing buzzwords. Every performance gain is gr
 
 ## 📊 Empirical Benchmarking
 
-Obsidian includes an empirical benchmark engine that queries the Windows Kernel directly. **Zero synthetic claims, zero marketing exaggerations**:
+Obsidian includes an empirical benchmark engine that queries the Windows Kernel directly. **Zero synthetic claims, zero marketing exaggerations**. In version 2.0, Obsidian automatically calculates the real-time delta between your pre-flight and post-flight state:
 
 ```powershell
-.\obsidian.exe benchmark --label pre-apply
-# [Apply Profile]
-.\obsidian.exe benchmark --label post-apply
+.\obsidian.exe apply --profile ultimate
 ```
 
-Generated metrics report:
+Generated metrics report during application:
 ```text
 ================================================================================
-PROJECT OBSIDIAN — SYSTEM BENCHMARK [post-apply]
+PROJECT OBSIDIAN — BEFORE vs AFTER COMPARISON
 ================================================================================
-  Total RAM                 : 30.88 GB
-  RAM in Use                : 17.82 GB (57.7%) [-0.73 GB]
-  Available RAM             : 13.06 GB
-  CPU Idle Load             : 1.8%
-  Active Processes          : 312 [-42 processes]
-  Active Threads            : 3,120 [-380 threads]
+  RAM In Use                : 18.55 → 17.82 GB  [-0.73 ↓]
+  Active Processes          : 354 → 312  [-42 ↓]
+  Active Threads            : 3500 → 3120  [-380 ↓]
+  CPU Usage                 : 3.2% → 1.8%  [-1.40 ↓]
 ================================================================================
 ```
 
