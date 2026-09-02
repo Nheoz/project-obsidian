@@ -74,7 +74,18 @@ pub enum Commands {
     },
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    ValueEnum,
+    Debug,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub enum ProfileType {
     /// Strict privacy hardening, telemetry reduction, and ad blocking
     Privacy,

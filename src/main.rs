@@ -15,7 +15,9 @@ use clap::Parser;
 use cli::{Cli, Commands};
 use colored::*;
 use hardware::HardwareInfo;
-use modules::{ai::AiModule, developer::DeveloperModule, gaming::GamingModule, privacy::PrivacyModule};
+use modules::{
+    ai::AiModule, developer::DeveloperModule, gaming::GamingModule, privacy::PrivacyModule,
+};
 use profiles::OptimizationProfile;
 use rollback::RollbackEngine;
 use snapshot::Snapshot;
@@ -69,13 +71,23 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
         }
 
         Commands::Analyze => {
-            println!("{}", "[*] INITIATING NON-DESTRUCTIVE DRY-RUN ANALYSIS".cyan().bold());
+            println!(
+                "{}",
+                "[*] INITIATING NON-DESTRUCTIVE DRY-RUN ANALYSIS"
+                    .cyan()
+                    .bold()
+            );
             print_system_overview(windows, hardware);
             PrivacyModule::audit()?;
             GamingModule::audit()?;
             DeveloperModule::audit()?;
             AiModule::doctor()?;
-            println!("\n{}", "[V] Analysis complete. Zero changes applied to disk or registry.".green().bold());
+            println!(
+                "\n{}",
+                "[V] Analysis complete. Zero changes applied to disk or registry."
+                    .green()
+                    .bold()
+            );
         }
 
         Commands::Doctor => {
@@ -109,7 +121,12 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
             );
 
             if !windows.is_admin && !dry_run {
-                println!("{}", "[*] Administrator privileges required to configure system.".yellow().bold());
+                println!(
+                    "{}",
+                    "[*] Administrator privileges required to configure system."
+                        .yellow()
+                        .bold()
+                );
                 println!("{}", "[*] Launching Windows UAC elevation prompt...".cyan());
                 WindowsInfo::relaunch_as_admin()?;
                 return Ok(());
@@ -118,12 +135,18 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
             let mut snap = Snapshot::new(&opt_profile.name, windows.clone(), hardware.clone());
 
             // 1. Capture Pre-Flight Benchmark
-            println!("\n{}", "[1/4] Capturing pre-flight performance baseline...".yellow());
+            println!(
+                "\n{}",
+                "[1/4] Capturing pre-flight performance baseline...".yellow()
+            );
             let bench_before = benchmark::BenchmarkMetrics::capture("pre-apply");
             bench_before.print_summary();
 
             // 2. Apply Modules Based on Profile
-            println!("\n{}", "[2/4] Executing configuration changes safely...".yellow());
+            println!(
+                "\n{}",
+                "[2/4] Executing configuration changes safely...".yellow()
+            );
             if opt_profile.enable_privacy {
                 PrivacyModule::apply(dry_run, &mut snap)?;
             }
@@ -131,10 +154,10 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
                 GamingModule::apply(dry_run, &mut snap)?;
             }
             if opt_profile.enable_ai_doctor {
-                AiModule::doctor()?;
+                AiModule::apply()?;
             }
             if opt_profile.enable_developer {
-                DeveloperModule::audit()?;
+                DeveloperModule::apply()?;
             }
 
             // 3. Save Atomic Snapshot
@@ -148,11 +171,17 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
             }
 
             // 4. Post-Flight Health Validation
-            println!("\n{}", "[3/4] Running post-flight zero-breakage validation...".yellow());
+            println!(
+                "\n{}",
+                "[3/4] Running post-flight zero-breakage validation...".yellow()
+            );
             let checks = ValidationEngine::run_all()?;
 
             // 5. Generate Report
-            println!("\n{}", "[4/4] Generating comprehensive execution report...".yellow());
+            println!(
+                "\n{}",
+                "[4/4] Generating comprehensive execution report...".yellow()
+            );
             let report = reporting::ComprehensiveReport {
                 timestamp: chrono::Utc::now().to_rfc3339(),
                 windows: windows.clone(),
@@ -164,10 +193,21 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
             report.save_all(Path::new("report.md"))?;
             println!("{}", "  [OK] Saved report.md and report.json".green());
 
-            println!("\n{}", "================================================================================".cyan());
-            println!("{}", "[V] PROJECT OBSIDIAN APPLIED SUCCESSFULLY.".green().bold());
+            println!(
+                "\n{}",
+                "================================================================================"
+                    .cyan()
+            );
+            println!(
+                "{}",
+                "[V] PROJECT OBSIDIAN APPLIED SUCCESSFULLY.".green().bold()
+            );
             println!("{}", "    System is optimized for low latency, zero telemetry bloat, and peak stability.".white());
-            println!("{}", "================================================================================".cyan());
+            println!(
+                "{}",
+                "================================================================================"
+                    .cyan()
+            );
         }
 
         Commands::Export { output } => {
@@ -182,7 +222,11 @@ fn execute_command(cmd: Commands, windows: &WindowsInfo, hardware: &HardwareInfo
                 benchmark: bench,
             };
             report.save_all(&output)?;
-            println!("{} {}", "[V] Diagnostic report successfully written to:".green(), output.display());
+            println!(
+                "{} {}",
+                "[V] Diagnostic report successfully written to:".green(),
+                output.display()
+            );
         }
     }
     Ok(())
@@ -194,16 +238,43 @@ fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Resul
     loop {
         print_system_overview(windows, hardware);
         println!("{}", "SELECT AN ACTION:".yellow().bold());
-        println!("  {} Analyze System (Dry-run, zero changes)", "[1]".cyan().bold());
-        println!("  {} AI & Gaming Doctor (Inspect CUDA, WSL2, Docker, Anticheats)", "[2]".cyan().bold());
-        println!("  {} System Benchmark (Measure RAM, CPU, active processes)", "[3]".cyan().bold());
-        println!("  {} Apply Profile: ULTIMATE (All safe privacy & gaming optimizations)", "[4]".green().bold());
-        println!("  {} Apply Profile: PRIVACY (Telemetry & ad blocking only)", "[5]".green().bold());
-        println!("  {} Apply Profile: GAMING (Latency & Game DVR only)", "[6]".green().bold());
-        println!("  {} Validate System Health (Post-flight zero-breakage check)", "[7]".cyan().bold());
-        println!("  {} Restore / Rollback (Revert system to exact prior state)", "[8]".magenta().bold());
+        println!(
+            "  {} Analyze System (Dry-run, zero changes)",
+            "[1]".cyan().bold()
+        );
+        println!(
+            "  {} AI & Gaming Doctor (Inspect CUDA, WSL2, Docker, Anticheats)",
+            "[2]".cyan().bold()
+        );
+        println!(
+            "  {} System Benchmark (Measure RAM, CPU, active processes)",
+            "[3]".cyan().bold()
+        );
+        println!(
+            "  {} Apply Profile: ULTIMATE (All safe privacy & gaming optimizations)",
+            "[4]".green().bold()
+        );
+        println!(
+            "  {} Apply Profile: PRIVACY (Telemetry & ad blocking only)",
+            "[5]".green().bold()
+        );
+        println!(
+            "  {} Apply Profile: GAMING (Latency & Game DVR only)",
+            "[6]".green().bold()
+        );
+        println!(
+            "  {} Validate System Health (Post-flight zero-breakage check)",
+            "[7]".cyan().bold()
+        );
+        println!(
+            "  {} Restore / Rollback (Revert system to exact prior state)",
+            "[8]".magenta().bold()
+        );
         if !windows.is_admin {
-            println!("  {} Elevate to Administrator (Trigger UAC Prompt)", "[0]".yellow().bold());
+            println!(
+                "  {} Elevate to Administrator (Trigger UAC Prompt)",
+                "[0]".yellow().bold()
+            );
         }
         println!("  {} Exit Project Obsidian", "[9]".dimmed());
         print!("\n{}", "Enter option: ".white().bold());
@@ -216,7 +287,10 @@ fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Resul
         println!("\n");
         match choice {
             "0" => {
-                println!("{}", "[*] Requesting Administrator elevation via UAC...".cyan());
+                println!(
+                    "{}",
+                    "[*] Requesting Administrator elevation via UAC...".cyan()
+                );
                 WindowsInfo::relaunch_as_admin()?;
             }
             "1" => {
@@ -226,16 +300,43 @@ fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Resul
                 execute_command(Commands::Doctor, windows, hardware)?;
             }
             "3" => {
-                execute_command(Commands::Benchmark { label: "manual".to_string() }, windows, hardware)?;
+                execute_command(
+                    Commands::Benchmark {
+                        label: "manual".to_string(),
+                    },
+                    windows,
+                    hardware,
+                )?;
             }
             "4" => {
-                execute_command(Commands::Apply { profile: cli::ProfileType::Ultimate, dry_run: false }, windows, hardware)?;
+                execute_command(
+                    Commands::Apply {
+                        profile: cli::ProfileType::Ultimate,
+                        dry_run: false,
+                    },
+                    windows,
+                    hardware,
+                )?;
             }
             "5" => {
-                execute_command(Commands::Apply { profile: cli::ProfileType::Privacy, dry_run: false }, windows, hardware)?;
+                execute_command(
+                    Commands::Apply {
+                        profile: cli::ProfileType::Privacy,
+                        dry_run: false,
+                    },
+                    windows,
+                    hardware,
+                )?;
             }
             "6" => {
-                execute_command(Commands::Apply { profile: cli::ProfileType::Gaming, dry_run: false }, windows, hardware)?;
+                execute_command(
+                    Commands::Apply {
+                        profile: cli::ProfileType::Gaming,
+                        dry_run: false,
+                    },
+                    windows,
+                    hardware,
+                )?;
             }
             "7" => {
                 execute_command(Commands::Validate, windows, hardware)?;
@@ -244,11 +345,17 @@ fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Resul
                 execute_command(Commands::Restore { snapshot: None }, windows, hardware)?;
             }
             "9" | "q" | "exit" => {
-                println!("{}", "Exiting Project Obsidian. Stay fast, stay private!".cyan());
+                println!(
+                    "{}",
+                    "Exiting Project Obsidian. Stay fast, stay private!".cyan()
+                );
                 break;
             }
             _ => {
-                println!("{}", "[!] Invalid selection. Please enter a valid option number.".red());
+                println!(
+                    "{}",
+                    "[!] Invalid selection. Please enter a valid option number.".red()
+                );
             }
         }
 
@@ -262,25 +369,73 @@ fn run_interactive_menu(windows: &WindowsInfo, hardware: &HardwareInfo) -> Resul
 }
 
 fn print_banner() {
-    println!("{}", "================================================================================".cyan());
-    println!("{}", "         _____     _           _      ____  _       _     _             ".cyan());
-    println!("{}", "        |  _  |___|_|___ ___ _| |_   |    \\| |_ ___|_|___| |___ ___     ".cyan());
-    println!("{}", "        |   __|  _| | -_|  _| . |    |  |  | . |_ -| | . | | .'|   |    ".cyan());
-    println!("{}", "        |__|  |_| |_|___|___|___|    |____/|___|___|_|___|_|__,|_|_|    ".cyan());
-    println!("{}", "                                                                        ".cyan());
-    println!("{}", "                 Forge Windows into a Privacy-First Workstation                 ".white().bold());
-    println!("{}", "              Zero Placebos • Anti-Cheat Safe • Guaranteed Rollback             ".dimmed());
-    println!("{}", "================================================================================".cyan());
+    let version = env!("CARGO_PKG_VERSION");
+    println!(
+        "{}",
+        "================================================================================".cyan()
+    );
+    println!(
+        "{}",
+        "         _____     _           _      ____  _       _     _             ".cyan()
+    );
+    println!(
+        "{}",
+        "        |  _  |___|_|___ ___ _| |_   |    \\| |_ ___|_|___| |___ ___     ".cyan()
+    );
+    println!(
+        "{}",
+        "        |   __|  _| | -_|  _| . |    |  |  | . |_ -| | . | | .'|   |    ".cyan()
+    );
+    println!(
+        "{}",
+        "        |__|  |_| |_|___|___|___|    |____/|___|___|_|___|_|__,|_|_|    ".cyan()
+    );
+    println!(
+        "{}",
+        "                                                                        ".cyan()
+    );
+    println!(
+        "{}",
+        "                 Forge Windows into a Privacy-First Workstation                 "
+            .white()
+            .bold()
+    );
+    println!(
+        "{}",
+        "              Zero Placebos • Anti-Cheat Safe • Guaranteed Rollback             ".dimmed()
+    );
+    println!(
+        "                               {}                                    ",
+        format!("v{}  |  github.com/Nheoz/project-obsidian", version).dimmed()
+    );
+    println!(
+        "{}",
+        "================================================================================".cyan()
+    );
 }
 
 fn print_system_overview(win: &WindowsInfo, hw: &HardwareInfo) {
     println!("{}", "--- [System Architecture & Baseline] ---".yellow());
-    println!("  {:<25} : {} (Build {})", "Operating System", win.caption, win.build_number);
+    println!(
+        "  {:<25} : {} (Build {})",
+        "Operating System", win.caption, win.build_number
+    );
     println!("  {:<25} : {}", "Processor", hw.cpu_brand);
     println!("  {:<25} : {:.2} GB", "System Memory", hw.total_memory_gb);
     for gpu in &hw.gpus {
-        println!("  {:<25} : {} [Driver: {}]", "Graphics Adapter", gpu.name, gpu.driver_version);
+        println!(
+            "  {:<25} : {} [Driver: {}]",
+            "Graphics Adapter", gpu.name, gpu.driver_version
+        );
     }
-    println!("  {:<25} : {}", "Privileges", if win.is_admin { "Administrator [Ready]".green() } else { "Standard User [Elevation required to apply]".yellow() });
+    println!(
+        "  {:<25} : {}",
+        "Privileges",
+        if win.is_admin {
+            "Administrator [Ready]".green()
+        } else {
+            "Standard User [Elevation required to apply]".yellow()
+        }
+    );
     println!();
 }

@@ -8,9 +8,21 @@ pub struct RollbackEngine;
 
 impl RollbackEngine {
     pub fn execute(state_dir: &Path, specific_snapshot: Option<PathBuf>) -> Result<()> {
-        println!("{}", "================================================================================".cyan());
-        println!("{}", "               PROJECT OBSIDIAN — ATOMIC ROLLBACK ENGINE                        ".cyan());
-        println!("{}", "================================================================================".cyan());
+        println!(
+            "{}",
+            "================================================================================"
+                .cyan()
+        );
+        println!(
+            "{}",
+            "               PROJECT OBSIDIAN — ATOMIC ROLLBACK ENGINE                        "
+                .cyan()
+        );
+        println!(
+            "{}",
+            "================================================================================"
+                .cyan()
+        );
 
         let snapshot_path = match specific_snapshot {
             Some(p) => p,
@@ -19,8 +31,14 @@ impl RollbackEngine {
                 match latest {
                     Some((path, _)) => path,
                     None => {
-                        println!("{}", "[!] No previous snapshot found in obsidian-state/".yellow());
-                        println!("{}", "[*] Falling back to default Windows policies restoration...".cyan());
+                        println!(
+                            "{}",
+                            "[!] No previous snapshot found in obsidian-state/".yellow()
+                        );
+                        println!(
+                            "{}",
+                            "[*] Falling back to default Windows policies restoration...".cyan()
+                        );
                         Self::execute_powershell_fallback()?;
                         return Ok(());
                     }
@@ -28,7 +46,11 @@ impl RollbackEngine {
             }
         };
 
-        println!("{} {}", "[*] Restoring from snapshot:".cyan(), snapshot_path.display());
+        println!(
+            "{} {}",
+            "[*] Restoring from snapshot:".cyan(),
+            snapshot_path.display()
+        );
 
         let root = crate::embedded::get_scripts_root();
         let restore_script = root.join("Restore-Obsidian.ps1");
@@ -49,7 +71,10 @@ impl RollbackEngine {
         if status.success() {
             println!("{}", "[V] Rollback completed successfully!".green().bold());
         } else {
-            eprintln!("{}", "[X] Rollback process returned errors. Review logs for details.".red());
+            eprintln!(
+                "{}",
+                "[X] Rollback process returned errors. Review logs for details.".red()
+            );
         }
 
         Ok(())
@@ -71,7 +96,10 @@ impl RollbackEngine {
             .context("Failed to execute fallback Restore-Obsidian.ps1")?;
 
         if !status.success() {
-            anyhow::bail!("Fallback restoration failed with exit code: {:?}", status.code());
+            anyhow::bail!(
+                "Fallback restoration failed with exit code: {:?}",
+                status.code()
+            );
         }
         Ok(())
     }

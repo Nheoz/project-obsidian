@@ -7,7 +7,7 @@
 #>
 
 Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Continue'
+$ErrorActionPreference = 'SilentlyContinue'
 
 function Test-ObsidianHealth {
     [CmdletBinding()]

@@ -72,7 +72,8 @@ impl HardwareInfo {
                     for item in arr {
                         let name = item["Name"].as_str().unwrap_or("").to_string();
                         let driver = item["DriverVersion"].as_str().unwrap_or("").to_string();
-                        let is_nv = name.to_lowercase().contains("nvidia") || name.to_lowercase().contains("geforce");
+                        let is_nv = name.to_lowercase().contains("nvidia")
+                            || name.to_lowercase().contains("geforce");
                         list.push(GpuInfo {
                             name,
                             driver_version: driver,
@@ -82,7 +83,8 @@ impl HardwareInfo {
                 } else if val.is_object() {
                     let name = val["Name"].as_str().unwrap_or("").to_string();
                     let driver = val["DriverVersion"].as_str().unwrap_or("").to_string();
-                    let is_nv = name.to_lowercase().contains("nvidia") || name.to_lowercase().contains("geforce");
+                    let is_nv = name.to_lowercase().contains("nvidia")
+                        || name.to_lowercase().contains("geforce");
                     list.push(GpuInfo {
                         name,
                         driver_version: driver,

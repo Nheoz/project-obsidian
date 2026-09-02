@@ -31,8 +31,12 @@ impl WindowsInfo {
         if let Ok(out) = output {
             let json_str = String::from_utf8_lossy(&out.stdout);
             if let Ok(val) = serde_json::from_str::<serde_json::Value>(&json_str) {
-                if let Some(c) = val["Caption"].as_str() { caption = c.to_string(); }
-                if let Some(v) = val["Version"].as_str() { version = v.to_string(); }
+                if let Some(c) = val["Caption"].as_str() {
+                    caption = c.to_string();
+                }
+                if let Some(v) = val["Version"].as_str() {
+                    version = v.to_string();
+                }
                 if let Some(b) = val["BuildNumber"].as_str() {
                     build_number = b.parse().unwrap_or(22631);
                 }
@@ -82,7 +86,10 @@ impl WindowsInfo {
             .args([
                 "-NoProfile",
                 "-Command",
-                &format!("Start-Process -FilePath '{}' -Verb RunAs", current_exe.display()),
+                &format!(
+                    "Start-Process -FilePath '{}' -Verb RunAs",
+                    current_exe.display()
+                ),
             ])
             .spawn();
         std::process::exit(0);

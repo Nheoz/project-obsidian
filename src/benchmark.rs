@@ -29,7 +29,11 @@ impl BenchmarkMetrics {
         let total_mem = sys.total_memory() as f64 / (1024.0 * 1024.0 * 1024.0);
         let used_mem = sys.used_memory() as f64 / (1024.0 * 1024.0 * 1024.0);
         let avail_mem = sys.available_memory() as f64 / (1024.0 * 1024.0 * 1024.0);
-        let mem_percent = if total_mem > 0.0 { (used_mem / total_mem) * 100.0 } else { 0.0 };
+        let mem_percent = if total_mem > 0.0 {
+            (used_mem / total_mem) * 100.0
+        } else {
+            0.0
+        };
 
         let cpu_usage = sys.global_cpu_usage();
         let total_processes = sys.processes().len();
@@ -54,16 +58,41 @@ impl BenchmarkMetrics {
     }
 
     pub fn print_summary(&self) {
-        println!("{}", "================================================================================".cyan());
-        println!("{} [{}]", "PROJECT OBSIDIAN — SYSTEM BENCHMARK".cyan().bold(), self.label.yellow());
-        println!("{}", "================================================================================".cyan());
+        println!(
+            "{}",
+            "================================================================================"
+                .cyan()
+        );
+        println!(
+            "{} [{}]",
+            "PROJECT OBSIDIAN — SYSTEM BENCHMARK".cyan().bold(),
+            self.label.yellow()
+        );
+        println!(
+            "{}",
+            "================================================================================"
+                .cyan()
+        );
         println!("  {:<25} : {:.2} GB", "Total RAM", self.total_memory_gb);
-        println!("  {:<25} : {:.2} GB ({:.1}%)", "RAM in Use", self.used_memory_gb, self.memory_used_percent);
-        println!("  {:<25} : {:.2} GB", "Available RAM", self.available_memory_gb);
-        println!("  {:<25} : {:.1}%", "CPU Idle Load", self.cpu_global_usage_percent);
+        println!(
+            "  {:<25} : {:.2} GB ({:.1}%)",
+            "RAM in Use", self.used_memory_gb, self.memory_used_percent
+        );
+        println!(
+            "  {:<25} : {:.2} GB",
+            "Available RAM", self.available_memory_gb
+        );
+        println!(
+            "  {:<25} : {:.1}%",
+            "CPU Idle Load", self.cpu_global_usage_percent
+        );
         println!("  {:<25} : {}", "Active Processes", self.total_processes);
         println!("  {:<25} : {}", "Active Threads", self.total_threads);
-        println!("{}", "================================================================================".cyan());
+        println!(
+            "{}",
+            "================================================================================"
+                .cyan()
+        );
     }
 
     pub fn save_to_file(&self, path: &Path) -> Result<()> {

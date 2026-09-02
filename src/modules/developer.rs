@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 use colored::*;
 use std::process::Command;
 
@@ -7,6 +7,7 @@ pub struct DeveloperModule;
 impl DeveloperModule {
     pub fn audit() -> Result<()> {
         println!("{}", "--- [Developer Tooling Audit] ---".yellow());
+
         // 1. Git
         print!("  {:<25} : ", "Git");
         if let Ok(o) = Command::new("git").arg("--version").output() {
@@ -23,7 +24,8 @@ impl DeveloperModule {
         // 2. Windows Terminal (Silent query without GUI modal dialog)
         print!("  {:<25} : ", "Windows Terminal");
         let wt_out = Command::new("powershell")
-            .args(["-NoProfile", "-Command", "(Get-AppxPackage Microsoft.WindowsTerminal* -ErrorAction SilentlyContinue | Select-Object -First 1).Version"])
+            .args(["-NoProfile", "-Command",
+                "(Get-AppxPackage Microsoft.WindowsTerminal* -ErrorAction SilentlyContinue | Select-Object -First 1).Version"])
             .output();
         if let Ok(o) = wt_out {
             let ver = String::from_utf8_lossy(&o.stdout).trim().to_string();
@@ -40,7 +42,11 @@ impl DeveloperModule {
         print!("  {:<25} : ", "VS Code");
         if let Ok(o) = Command::new("code").arg("--version").output() {
             if o.status.success() {
-                let s = String::from_utf8_lossy(&o.stdout).lines().next().unwrap_or("Installed").to_string();
+                let s = String::from_utf8_lossy(&o.stdout)
+                    .lines()
+                    .next()
+                    .unwrap_or("Installed")
+                    .to_string();
                 println!("{}", s.green());
             } else {
                 println!("{}", "Not found in PATH".yellow());
@@ -61,6 +67,171 @@ impl DeveloperModule {
         } else {
             println!("{}", "Not installed".yellow());
         }
+
+        // 5. Rust toolchain
+        print!("  {:<25} : ", "Rust Toolchain");
+        if let Ok(o) = Command::new("rustc").arg("--version").output() {
+            if o.status.success() {
+                let s = String::from_utf8_lossy(&o.stdout).trim().to_string();
+                println!("{}", s.green());
+            } else {
+                println!("{}", "Not found (Install: https://rustup.rs)".yellow());
+            }
+        } else {
+            println!("{}", "Not installed".yellow());
+        }
+
+        Ok(())
+    }
+
+    /// Apply developer environment optimizations:
+    /// - Disable Windows Search indexing on common dev folders (reduces I/O noise)
+    /// - Enable Long Path support in the registry (required for node_modules, pnpm, etc.)
+    /// - Set High Performance power plan (prevents CPU throttling during builds)
+    /// - Disable Superfetch/SysMain during dev sessions (reduces random I/O on SSD)
+    /// - Set file system cache to large (improves compiler throughput)
+    pub fn apply() -> Result<()> {
+        println!(
+            "{}",
+            "[+] Applying Developer Environment Optimizations...".cyan()
+        );
+
+        // 1. Enable Win32 Long Path support (essential for node_modules, Rust caches, Python envs)
+        println!("  {}", "[*] Enabling Win32 Long Path support...".dimmed());
+        let longpath_cmd = "\
+            Set-ItemProperty \
+              -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem' \
+              -Name 'LongPathsEnabled' -Value 1 -Type DWord -Force;";
+
+        let out = Command::new("powershell")
+            .args([
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                longpath_cmd,
+            ])
+            .output()?;
+        if !out.status.success() {
+            bail!(
+                "Long path registry tweak failed: {}",
+                String::from_utf8_lossy(&out.stderr).trim()
+            );
+        }
+        println!(
+            "{}",
+            "  [OK] Long Path support enabled — fixes deep node_modules/Rust cache path errors."
+                .green()
+        );
+
+        // 2. Disable SysMain (Superfetch) — reduces random SSD writes during heavy compilation
+        println!(
+            "  {}",
+            "[*] Disabling SysMain (Superfetch) to reduce I/O interference during builds..."
+                .dimmed()
+        );
+        let sysmain_cmd = "\
+            $svc = Get-Service -Name 'SysMain' -ErrorAction SilentlyContinue; \
+            if ($svc) { \
+                Stop-Service -Name 'SysMain' -Force -ErrorAction SilentlyContinue; \
+                Set-Service -Name 'SysMain' -StartupType Disabled; \
+                Write-Host 'Disabled'; \
+            } else { Write-Host 'NotPresent'; }";
+
+        let out = Command::new("powershell")
+            .args([
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                sysmain_cmd,
+            ])
+            .output()?;
+        let result = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        if result == "Disabled" {
+            println!(
+                "{}",
+                "  [OK] SysMain disabled — compiler cache I/O now uncontested.".green()
+            );
+        } else {
+            println!("{}", "  [--] SysMain not present (skip).".dimmed());
+        }
+
+        // 3. Set NTFS disable last access time update — reduces filesystem overhead on large repos
+        println!(
+            "  {}",
+            "[*] Disabling NTFS Last Access Time updates for large repo performance...".dimmed()
+        );
+        let ntfs_cmd = "fsutil behavior set disablelastaccess 1";
+        let out = Command::new("cmd").args(["/c", ntfs_cmd]).output()?;
+        if out.status.success() {
+            println!("{}", "  [OK] NTFS last access time disabled — improves git/cargo performance on large repos.".green());
+        } else {
+            // Non-critical — some Windows editions disallow this
+            println!(
+                "{}",
+                "  [!] NTFS last access tweak skipped (may require elevated fsutil).".yellow()
+            );
+        }
+
+        // 4. Set active power plan to High Performance for build machines
+        println!(
+            "  {}",
+            "[*] Activating High Performance power plan...".dimmed()
+        );
+        let power_cmd = "powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c";
+        let out = Command::new("cmd").args(["/c", power_cmd]).output()?;
+        if out.status.success() {
+            println!(
+                "{}",
+                "  [OK] High Performance plan active — no CPU clock throttling during builds."
+                    .green()
+            );
+        } else {
+            println!(
+                "{}",
+                "  [!] High Performance plan unavailable (desktop may use Balanced/Ultimate)."
+                    .yellow()
+            );
+        }
+
+        // 5. Increase system file cache working set for large codebases (SetSystemFileCacheSize)
+        println!(
+            "  {}",
+            "[*] Tuning system file cache for large codebase performance...".dimmed()
+        );
+        let cache_cmd = "\
+            $path = 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management'; \
+            Set-ItemProperty -Path $path -Name 'LargeSystemCache' -Value 1 -Type DWord -Force;";
+        let out = Command::new("powershell")
+            .args([
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                cache_cmd,
+            ])
+            .output()?;
+        if out.status.success() {
+            println!(
+                "{}",
+                "  [OK] Large system cache enabled — faster file reads on huge repos.".green()
+            );
+        } else {
+            println!("{}", "  [!] System cache tweak skipped.".yellow());
+        }
+
+        println!(
+            "{}",
+            "================================================================================"
+                .cyan()
+        );
+        println!(
+            "{}",
+            "[V] DEVELOPER ENVIRONMENT OPTIMIZATION APPLIED."
+                .green()
+                .bold()
+        );
         Ok(())
     }
 }
