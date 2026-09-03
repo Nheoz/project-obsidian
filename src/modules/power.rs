@@ -227,30 +227,33 @@ impl PowerModule {
             .output();
         println!("{}", t!(en: "  [OK] USB Selective Suspend disabled.", es: "  [OK] Suspensión Selectiva de USB desactivada.").green());
 
-        // ── Step 7: Minimum CPU performance = 100% (no throttle) ──────────────
+        // ── Step 7: Minimum CPU performance = 5% (allow idle cooling) ──────────────
         println!(
             "{}",
             t!(
-                en: "  [*] Setting minimum CPU performance state to 100%...",
-                es: "  [*] Estableciendo el rendimiento mínimo de CPU al 100%..."
+                en: "  [*] Setting minimum CPU performance state to 5%...",
+                es: "  [*] Estableciendo el rendimiento mínimo de CPU al 5%..."
             )
             .dimmed()
         );
         println!(
             "{}",
             t!(
-                en: "      (Prevents the CPU from ever downclocking below its maximum — eliminates hitches during AI inference spikes)",
-                es: "      (Evita que la CPU baje de sus frecuencias máximas — elimina tirones durante picos de inferencia de IA)"
+                en: "      (Allows the CPU to idle cooler, preventing custom BIOS fan curves from ramping up aggressively when doing nothing)",
+                es: "      (Permite que la CPU baje su temperatura en reposo, evitando que las curvas de ventilador custom de la BIOS se disparen al no hacer nada)"
             )
             .green()
         );
         let _ = Command::new("cmd")
-            .args(["/c", "powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 100"])
+            .args(["/c", "powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 5"])
+            .output();
+        let _ = Command::new("cmd")
+            .args(["/c", "powercfg /setdcvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 5"])
             .output();
         let _ = Command::new("cmd")
             .args(["/c", "powercfg /setactive SCHEME_CURRENT"])
             .output();
-        println!("{}", t!(en: "  [OK] CPU will always run at full performance.", es: "  [OK] La CPU siempre correrá a pleno rendimiento.").green());
+        println!("{}", t!(en: "  [OK] CPU idle state restored to 5% (quiet fan profile).", es: "  [OK] Estado de reposo de CPU al 5% (perfil de ventilador silencioso).").green());
 
         // ── Step 8: Disable Fast Startup ───────────────────────────────────────
         println!(
