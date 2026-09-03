@@ -10,6 +10,7 @@ pub struct OptimizationProfile {
     pub enable_gaming: bool,
     pub enable_ai_doctor: bool,
     pub enable_developer: bool,
+    pub enable_power_management: bool,
 }
 
 impl OptimizationProfile {
@@ -23,6 +24,7 @@ impl OptimizationProfile {
                 enable_gaming: false,
                 enable_ai_doctor: false,
                 enable_developer: false,
+                enable_power_management: false,
             },
             ProfileType::Gaming => OptimizationProfile {
                 profile_type: p_type,
@@ -32,37 +34,42 @@ impl OptimizationProfile {
                 enable_gaming: true,
                 enable_ai_doctor: false,
                 enable_developer: false,
+                enable_power_management: true,
             },
             ProfileType::Ai => OptimizationProfile {
                 profile_type: p_type,
                 name: "AI Workstation".to_string(),
-                description: "Audits CUDA, NVIDIA drivers, WSL2, Docker, Python, and local model runtimes.".to_string(),
+                description: "Audits CUDA, NVIDIA drivers, WSL2, Docker, Python, and local model runtimes. Never sleeps.".to_string(),
                 enable_privacy: false,
                 enable_gaming: false,
                 enable_ai_doctor: true,
                 enable_developer: true,
+                enable_power_management: true,
             },
             ProfileType::Developer => OptimizationProfile {
                 profile_type: p_type,
                 name: "Developer Workstation".to_string(),
-                description: "Configures developer subsystems (WSL2, Git, Docker, Windows Terminal, Python).".to_string(),
+                description: "Configures developer subsystems (WSL2, Git, Docker, Windows Terminal, Python). Never sleeps.".to_string(),
                 enable_privacy: true,
                 enable_gaming: false,
                 enable_ai_doctor: true,
                 enable_developer: true,
+                enable_power_management: true,
             },
             ProfileType::Ultimate => OptimizationProfile {
                 profile_type: p_type,
                 name: "Ultimate Workstation".to_string(),
-                description: "Combines privacy, gaming responsiveness, and AI development readiness in a single coherent profile.".to_string(),
+                description: "Combines privacy, gaming responsiveness, and AI development readiness. Never sleeps. CPU always at max.".to_string(),
                 enable_privacy: true,
                 enable_gaming: true,
                 enable_ai_doctor: true,
                 enable_developer: true,
+                enable_power_management: true,
             },
         }
     }
 }
+
 
 #[cfg(test)]
 mod tests {

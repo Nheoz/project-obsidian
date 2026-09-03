@@ -18,7 +18,8 @@ use cli::{Cli, Commands};
 use colored::*;
 use hardware::HardwareInfo;
 use modules::{
-    ai::AiModule, developer::DeveloperModule, gaming::GamingModule, privacy::PrivacyModule,
+    ai::AiModule, developer::DeveloperModule, gaming::GamingModule, power::PowerModule,
+    privacy::PrivacyModule,
 };
 use profiles::OptimizationProfile;
 use rollback::RollbackEngine;
@@ -282,6 +283,9 @@ fn execute_command(
             }
             if opt_profile.enable_developer {
                 DeveloperModule::apply()?;
+            }
+            if opt_profile.enable_power_management {
+                PowerModule::apply(dry_run)?;
             }
 
             // 3. Save Atomic Snapshot
