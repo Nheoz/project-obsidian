@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  # Run security scans daily to catch newly published CVEs
+  schedule:
+    - cron: '0 6 * * *'
 
 jobs:
   check:
@@ -37,3 +40,56 @@ jobs:
 
       - name: Run Tests
         run: cargo test --verbose
+
+  security-audit:
+    name: Security Audit (CVE Scan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: Audit Rust Dependencies for Known CVEs
+        run: cargo audit
+        # This queries the RustSec Advisory Database and fails if any dependency
+        # has a published CVE or security advisory
+
+  dependency-policy:
+    name: Dependency Policy (cargo-deny)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+
+      - name: Check Advisories, Banned Crates & Source Policy
+        run: cargo deny check advisories bans sources
+        # Enforces deny.toml — blocks CVEs, banned crates, yanked versions, unknown sources
+
+  release-hash:
+    name: Binary Integrity Hash
+    runs-on: windows-latest
+    needs: check
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Release Binary
+        run: cargo build --release
+
+      - name: Compute SHA-256 Hash
+        run: |
+          $hash = (Get-FileHash target\release\obsidian.exe -Algorithm SHA256).Hash
+          Write-Host "SHA-256: $hash"
+          "$hash  obsidian.exe" | Out-File -FilePath obsidian-sha256.txt -Encoding ascii
+          Write-Host "Hash written to obsidian-sha256.txt"
+
+      - name: Upload Hash Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: obsidian-sha256
+          path: obsidian-sha256.txt

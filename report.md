@@ -1,6 +1,6 @@
 # Project Obsidian — Execution & Optimization Report
 
-**Generated:** 2026-09-02T23:29:51.998361200+00:00
+**Generated:** 2026-09-03T10:32:47.494676700+00:00
 **Applied Profile:** Ultimate Workstation
 
 ## 1. System Baseline
@@ -26,10 +26,10 @@
 
 ## 3. Performance Metrics
 
-- **RAM in Use:** 18.75 GB (60.7%)
-- **Active Processes:** 347
-- **Active Threads:** 7180
-- **CPU Idle Load:** 12.2%
+- **RAM in Use:** 8.82 GB (28.6%)
+- **Active Processes:** 216
+- **Active Threads:** 3777
+- **CPU Idle Load:** 3.5%
 
 ## 4. Rollback Readiness
 
@@ -48,10 +48,10 @@ obsidian restore
 
 | Metric | Before | After | Delta | Verdict |
 | :--- | :--- | :--- | :--- | :--- |
-| **RAM In Use** | 18.76 GB | 18.75 GB | -0.01 GB | ≈ same |
-| **Memory Load** | 60.7% | 60.7% | +0.0% | ≈ same |
-| **Active Processes** | 345 | 347 | +2 | ↑ higher |
-| **Active Threads** | 7166 | 7180 | +14 | ↑ higher |
-| **CPU Usage** | 12.1% | 12.2% | +0.1% | ≈ same |
+| **RAM In Use** | 8.79 GB | 8.82 GB | +0.03 GB | ≈ same |
+| **Memory Load** | 28.5% | 28.6% | +0.1% | ≈ same |
+| **Active Processes** | 213 | 216 | +3 | ↑ higher |
+| **Active Threads** | 3664 | 3777 | +113 | ↑ higher |
+| **CPU Usage** | 2.7% | 3.5% | +0.8% | ≈ same |
 
 *Captured via Windows Kernel interfaces. Zero synthetic estimation.*
