@@ -56,7 +56,7 @@ $$\mathbf{SECURITY} > \mathbf{STABILITY} > \mathbf{COMPATIBILITY} > \mathbf{PRIV
 
 ### Option 1: Standalone Binary (Recommended)
 
-1. Download the latest `obsidian-vX.X.X-windows-x64.zip` from [**Releases**](https://github.com/Nheoz/project-obsidian/releases)
+1. Download the latest `obsidian-v1.1.0-windows-x64.zip` from [**Releases**](https://github.com/Nheoz/project-obsidian/releases)
 2. Extract and run **as Administrator** (right-click → Run as administrator)
 3. The interactive menu launches automatically — no command-line knowledge required.
 
@@ -66,7 +66,7 @@ Or from PowerShell as Administrator:
 # Audit your system without making ANY changes (Dry-Run)
 .\obsidian.exe analyze
 
-# Inspect your AI/GPU stack (NVIDIA, CUDA, WSL2, Docker, Python)
+# Inspect your AI/GPU stack (NVIDIA, CUDA, Driver Conflicts)
 .\obsidian.exe doctor
 
 # Capture a baseline performance benchmark
@@ -102,8 +102,8 @@ Just double-click `obsidian.exe`. The tool auto-elevates and shows a full intera
 | Profile | Target | What it applies |
 | :--- | :--- | :--- |
 | **`Privacy`** | All users | Disables telemetry, Advertising ID, Bing search in Start, Copilot, Widgets, CEIP tasks. |
-| **`Gaming`** | Gamers | Enforces Game Mode, HAGS, disables Game DVR overhead, activates **Ultimate Performance** power plan. |
-| **`AI`** | AI Engineers | Audits CUDA, NVIDIA RTX, WSL2, Docker, Python, Ollama. Extends GPU TDR to 60s. Never sleeps. |
+| **`Gaming`** | Gamers | Enforces Game Mode, HAGS, disables Game DVR. Applies **Low-Latency Network & Timer Tuning** and the **Ultimate Performance** power plan. |
+| **`AI`** | AI Engineers | Audits CUDA, NVIDIA RTX, WSL2, Docker, Python, Ollama. Scans for hardware driver conflicts (Code 43). Extends GPU TDR to 60s. Never sleeps. |
 | **`Developer`** | Developers | Long Paths, SysMain off, NTFS Last Access off, High Performance build environment. Never sleeps. |
 | **`Ultimate`** | Power Users | Everything above combined. Recommended for modern gaming + AI + dev workstations. |
 
@@ -196,10 +196,11 @@ Every release build on GitHub Actions computes a **SHA-256 hash** of `obsidian.e
 
 | Tweak | Decision | Reason |
 | :--- | :--- | :--- |
-| BCD / Timer Resolution hacks | ❌ **Rejected** | Destroys modern timer tick virtualization, causes micro-stutter in DX12, desyncs multi-CCD CPUs (7800X3D). |
+| Old BCDEDIT Hacks (`useplatformclock`) | ❌ **Rejected** | Destroys modern timer tick virtualization, causes micro-stutter in DX12, desyncs multi-CCD CPUs (7800X3D). |
 | Disabling Windows Defender | ❌ **Rejected** | Security is non-negotiable. |
 | Disabling RPC / WMI / BITS | ❌ **Rejected** | Causes systemic instability, installer crashes, and potential unbootable states. |
 | Aggressive AppX purge | ❌ **Rejected** | Corrupts shell components and breaks Microsoft Store dependencies. |
+| Global 1ms Timer Resolution | ✅ **Applied** | Safely activates the modern Windows 11 `GlobalTimerResolutionRequests` mechanism, giving global 1ms scheduling precision without BCDEDIT corruption. |
 | Disabling Telemetry (DiagTrack) | ✅ **Applied** | Safely cuts background transmission to Microsoft collection endpoints. |
 | Disabling Game DVR | ✅ **Applied** | Eliminates constant background disk writes during gameplay. |
 | Disabling NVIDIA Telemetry Container | ✅ **Applied** | Stops driver usage data collection in background, frees memory. |
@@ -340,7 +341,7 @@ $$\mathbf{SEGURIDAD} > \mathbf{ESTABILIDAD} > \mathbf{COMPATIBILIDAD} > \mathbf{
 
 ### Opción 1: Binario Standalone (Recomendado)
 
-1. Descarga el último `obsidian-vX.X.X-windows-x64.zip` de [**Releases**](https://github.com/Nheoz/project-obsidian/releases)
+1. Descarga el último `obsidian-v1.1.0-windows-x64.zip` de [**Releases**](https://github.com/Nheoz/project-obsidian/releases)
 2. Extrae y ejecuta **como Administrador** (clic derecho → Ejecutar como administrador)
 3. El menú interactivo se abre automáticamente — no necesitas conocimientos de línea de comandos.
 
@@ -350,7 +351,7 @@ O desde PowerShell como Administrador:
 # Analiza tu sistema sin hacer NINGÚN cambio (Simulación)
 .\obsidian.exe --lang es analyze
 
-# Inspecciona tu stack de IA/GPU (NVIDIA, CUDA, WSL2, Docker, Python)
+# Inspecciona tu stack de IA/GPU (NVIDIA, CUDA, Conflictos de Drivers)
 .\obsidian.exe --lang es doctor
 
 # Captura un benchmark de rendimiento base
@@ -382,8 +383,8 @@ O desde PowerShell como Administrador:
 | Perfil | Para quién | Qué aplica |
 | :--- | :--- | :--- |
 | **`Privacy`** | Todos los usuarios | Desactiva telemetría, ID publicitario, búsqueda Bing en el menú Inicio, Copilot, Widgets y tareas CEIP. |
-| **`Gaming`** | Gamers | Fuerza el Modo Juego, HAGS, desactiva el overhead de Game DVR, activa el plan **Máximo Rendimiento**. |
-| **`AI`** | Ingenieros de IA | Audita CUDA, NVIDIA RTX, WSL2, Docker, Python, Ollama. Extiende el TDR de GPU a 60s. Nunca se suspende. |
+| **`Gaming`** | Gamers | Fuerza el Modo Juego, HAGS, desactiva el overhead de Game DVR. Aplica **Tweaks Avanzados de Red y Temporizador** y el plan **Máximo Rendimiento**. |
+| **`AI`** | Ingenieros de IA | Audita CUDA, NVIDIA RTX, WSL2, Docker, Python, Ollama. Busca conflictos de drivers (Código 43). Extiende el TDR de GPU a 60s. Nunca se suspende. |
 | **`Developer`** | Desarrolladores | Rutas largas Win32, SysMain off, NTFS Last Access off, entorno de compilación de alto rendimiento. Nunca se suspende. |
 | **`Ultimate`** | Usuarios Avanzados | Todo lo anterior combinado. Recomendado para workstations de gaming + IA + desarrollo. |
 
@@ -467,10 +468,11 @@ Cada vez que se aplica un perfil, Obsidian ejecuta automáticamente una auditor�
 
 | Tweak | Decisión | Motivo |
 | :--- | :--- | :--- |
-| Hacks de BCD / Timer Resolution | ❌ **Rechazado** | Destruye la virtualización de temporizadores modernos, causa micro-tirones en DX12 y desincroniza CPUs multi-CCD (7800X3D). |
+| Viejos Hacks BCDEDIT (`useplatformclock`) | ❌ **Rechazado** | Destruye la virtualización de temporizadores modernos, causa micro-tirones en DX12 y desincroniza CPUs multi-CCD (7800X3D). |
 | Desactivar Windows Defender | ❌ **Rechazado** | La seguridad no es negociable. |
 | Desactivar RPC / WMI / BITS | ❌ **Rechazado** | Causa inestabilidad sistémica, fallos de instaladores y posibles estados sin arranque. |
 | Purga agresiva de AppX | ❌ **Rechazado** | Corrompe componentes del shell y rompe dependencias de Microsoft Store. |
+| Resolución de Temporizador 1ms Global | ✅ **Aplicado** | Activa de forma segura el mecanismo moderno `GlobalTimerResolutionRequests` de Windows 11, ofreciendo precisión de 1ms sin corromper BCD. |
 | Desactivar telemetría (DiagTrack) | ✅ **Aplicado** | Corta de forma segura la transmisión de datos de diagnóstico a los endpoints de Microsoft. |
 | Desactivar Game DVR | ✅ **Aplicado** | Elimina las escrituras constantes en disco durante el juego. |
 | Desactivar NVIDIA Telemetry Container | ✅ **Aplicado** | Detiene la recopilación de datos de uso del driver en segundo plano. |
