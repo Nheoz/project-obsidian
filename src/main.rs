@@ -19,7 +19,7 @@ use colored::*;
 use hardware::HardwareInfo;
 use modules::{
     ai::AiModule, developer::DeveloperModule, gaming::GamingModule, power::PowerModule,
-    privacy::PrivacyModule,
+    privacy::PrivacyModule, tweaks::TweaksModule,
 };
 use profiles::OptimizationProfile;
 use rollback::RollbackEngine;
@@ -277,6 +277,7 @@ fn execute_command(
             }
             if opt_profile.enable_gaming {
                 GamingModule::apply(dry_run, &mut snap)?;
+                TweaksModule::apply(dry_run)?;
             }
             if opt_profile.enable_ai_doctor {
                 AiModule::apply()?;

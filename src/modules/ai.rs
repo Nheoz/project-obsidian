@@ -124,6 +124,134 @@ impl AiModule {
             ),
         }
 
+        // ── Driver Conflict Detection ──────────────────────────────────────────
+        println!();
+        println!(
+            "{}",
+            t!(
+                en: "  ── Driver Health & Conflict Analysis ──",
+                es: "  ── Análisis de Salud y Conflictos de Drivers ──"
+            )
+            .white()
+            .bold()
+        );
+        println!(
+            "{}",
+            t!(
+                en: "  [*] Scanning all hardware devices for driver errors...",
+                es: "  [*] Escaneando todos los dispositivos hardware en busca de errores de driver..."
+            )
+            .dimmed()
+        );
+
+        let driver_scan_cmd = r#"
+            $problems = Get-CimInstance Win32_PnPEntity |
+                Where-Object { $_.ConfigManagerErrorCode -ne 0 } |
+                Select-Object Name, ConfigManagerErrorCode, DeviceID |
+                Sort-Object ConfigManagerErrorCode
+
+            if ($null -eq $problems -or @($problems).Count -eq 0) {
+                Write-Host "CLEAN"
+            } else {
+                $problems | ForEach-Object {
+                    $code = $_.ConfigManagerErrorCode
+                    $meaning = switch ($code) {
+                        1  { "Device not configured correctly" }
+                        3  { "Driver cannot load / corrupted" }
+                        10 { "Device cannot start (Code 10)" }
+                        12 { "IRQ/DMA resource conflict" }
+                        14 { "Requires restart to finish installing" }
+                        18 { "Reinstall drivers required" }
+                        22 { "Device is disabled" }
+                        28 { "Drivers not installed (Code 28)" }
+                        31 { "Device not working properly" }
+                        43 { "Device stopped — Windows reported a problem (Code 43)" }
+                        45 { "Device not present (was recently connected)" }
+                        47 { "Exceeded max resources — cannot start" }
+                        52 { "Driver blocked from starting (unsigned/policy)" }
+                        default { "Unknown error code $code" }
+                    }
+                    Write-Host "ERROR|$($_.Name)|Code $code|$meaning"
+                }
+            }
+        "#;
+
+        if let Ok(driver_out) = Command::new("powershell").args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", driver_scan_cmd]).output() {
+            let driver_str = String::from_utf8_lossy(&driver_out.stdout);
+            let mut conflict_count = 0u32;
+
+            for line in driver_str.lines() {
+                let line = line.trim();
+                if line == "CLEAN" {
+                    break;
+                }
+                if line.starts_with("ERROR|") {
+                    let parts: Vec<&str> = line.splitn(4, '|').collect();
+                    if parts.len() == 4 {
+                        conflict_count += 1;
+                        let device  = parts[1];
+                        let code    = parts[2];
+                        let meaning = parts[3];
+                        println!(
+                            "  {} {} — {} — {}",
+                            "[CONFLICT]".red().bold(),
+                            device.white().bold(),
+                            code.yellow(),
+                            meaning.red()
+                        );
+
+                        let advice = match parts[2] {
+                            c if c.contains("43") => t!(
+                                en: "           → Code 43: GPU/Device stopped. Try: clean driver reinstall (DDU), check connections.",
+                                es: "           → Código 43: GPU/Dispositivo detenido. Intenta: reinstalación limpia (DDU), revisa conexiones."
+                            ).to_string(),
+                            c if c.contains("10") => t!(
+                                en: "           → Code 10: Device cannot start. Update driver via Device Manager.",
+                                es: "           → Código 10: El dispositivo no puede iniciar. Actualiza el driver desde el Administrador de Dispositivos."
+                            ).to_string(),
+                            c if c.contains("28") => t!(
+                                en: "           → Code 28: No driver installed. Install missing driver.",
+                                es: "           → Código 28: Sin driver instalado. Instala el driver faltante."
+                            ).to_string(),
+                            c if c.contains("12") => t!(
+                                en: "           → Code 12: Resource conflict (IRQ). Try another PCIe slot or check BIOS.",
+                                es: "           → Código 12: Conflicto de recursos (IRQ). Prueba otro puerto PCIe o revisa la BIOS."
+                            ).to_string(),
+                            c if c.contains("52") => t!(
+                                en: "           → Code 52: Driver blocked (unsigned). Need WHQL-signed driver.",
+                                es: "           → Código 52: Driver bloqueado (sin firma). Requiere un driver con firma WHQL."
+                            ).to_string(),
+                            _ => String::new(),
+                        };
+                        if !advice.is_empty() {
+                            println!("{}", advice.yellow());
+                        }
+                    }
+                }
+            }
+
+            if conflict_count == 0 {
+                println!(
+                    "  {} {}",
+                    "[CLEAN]".green().bold(),
+                    t!(
+                        en: "All hardware devices report healthy drivers. No conflicts detected.",
+                        es: "Todos los dispositivos hardware reportan drivers saludables. No se detectaron conflictos."
+                    ).green()
+                );
+            } else {
+                println!(
+                    "\n  {} {} {}",
+                    "[!]".red().bold(),
+                    conflict_count,
+                    t!(
+                        en: "driver conflict(s) detected. Review before applying optimizations.",
+                        es: "conflicto(s) de driver detectado(s). Revisa antes de aplicar optimizaciones."
+                    ).yellow()
+                );
+            }
+        }
+
         println!(
             "{}",
             "================================================================================"

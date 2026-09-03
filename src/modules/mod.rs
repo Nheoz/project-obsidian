@@ -3,3 +3,4 @@ pub mod developer;
 pub mod gaming;
 pub mod power;
 pub mod privacy;
+pub mod tweaks;
