@@ -145,6 +145,7 @@ impl AiModule {
         );
 
         let driver_scan_cmd = r#"
+            [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
             $problems = Get-CimInstance Win32_PnPEntity |
                 Where-Object { $_.ConfigManagerErrorCode -ne 0 } |
                 Select-Object Name, ConfigManagerErrorCode, DeviceID |
