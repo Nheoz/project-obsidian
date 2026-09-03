@@ -15,3 +15,13 @@ report.json
 .idea/
 Thumbs.db
 Desktop.ini
+
+# Local run artifacts
+*.log
+*.zip
+obsidian-state/
+dist/
+report.md
+report.json
+benchmark-*.json
+obsidian.exe
